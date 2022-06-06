@@ -49,7 +49,6 @@ class Actor:
                 if state == None:
                     plan = self.planner.replan( state, action )
         return history
-        print()
 
 
 # ******************************************    Class Declaration End       ****************************************** #
