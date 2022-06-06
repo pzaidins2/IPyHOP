@@ -281,27 +281,79 @@ class IPyHOP(object):
     # ******************************        Class Method Declaration        ****************************************** #
     def replan(self, state: State, fail_node, verbose: Optional[int] = 0) -> _p_type:
 
-        self.state = state.copy()
-        fail_node_id = -1
-        for node in self.sol_tree.nodes:
-            if self.sol_tree.nodes[node]['info'] == fail_node:
-                fail_node_id = node
+        # self.state = state.copy()
+        # fail_node_id = -1
+        # for node in self.sol_tree.nodes:
+        #     if self.sol_tree.nodes[node]['info'] == fail_node:
+        #         fail_node_id = node
+        #
+        # assert (fail_node_id > -1), "Couldn't find the failure node."
+        # max_id = self._post_failure_modify(fail_node_id)
+        # parent_node_id, curr_node_id = self._backtrack(list(self.sol_tree.predecessors(fail_node_id))[0], fail_node_id)
+        #
+        # self.iterations = self._planning(max_id, parent_node_id)
+        # assert is_tree(self.sol_tree), "Error! Solution graph is not a tree."
+        #
+        # self.sol_plan = []
+        # # Store the planning solution as a list of actions to be executed.
+        # for node_id in dfs_preorder_nodes(self.sol_tree, source=0):
+        #     if self.sol_tree.nodes[node_id]['type'] == 'A':
+        #         if node_id >= max_id:
+        #             self.sol_plan.append(self.sol_tree.nodes[node_id]['info'])
 
-        assert (fail_node_id > -1), "Couldn't find the failure node."
-        max_id = self._post_failure_modify(fail_node_id)
-        parent_node_id, curr_node_id = self._backtrack(list(self.sol_tree.predecessors(fail_node_id))[0], fail_node_id)
+        state_stack = [ state ]
+        node_stack = [ fail_node ]
+        node = fail_node
+        solt_tree = self.sol_tree
 
-        self.iterations = self._planning(max_id, parent_node_id)
-        assert is_tree(self.sol_tree), "Error! Solution graph is not a tree."
+        # traverse up tree until method node with valid alternative found
+        while  node_stack != []:
+            state = state_stack[ 0 ]
+            node = state_stack[ 0 ]
+            # replace node with parent
+            node = next( sol_tree.predecessors( node) )
+            # remove successor nodes
+            sol_tree.remove_nodes_from( [ *sol_tree.successors( node ) ] )
+            node_stack[ 0 ] = node
+            node[ "available_methods" ] = set( node[ "available_methods" ] ) - { node[ "selected_method" ] }
+            # if there exists alternatives
+            if node[ "available_methods" ] != set():
+                # DOES NOT WORK AS WRITTEN
+                self.iterations = self._planning(max_id, parent_node_id)
+                # check if node expanded fully
+                if node[ "status" ] == "O":
+                    state_stack.pop()
+                    node_stack.pop()
+                    continue
+            else:
+                # check if root reached or previous node is desendant of current node parent
+                # if so return to previous node on stack else continue traversing up
+                prev_node = node_stack[ 1 ] if len( node_stack ) > 1 else None
+                curr_parent = next( sol_tree.predecessors( node ) )
+                if node[ "info" ] == "root" or prev_node in [ *sol_tree.successors( curr_parent ) ]:
+                    state_stack.pop()
+                    node_stack.pop()
+                continue
 
-        self.sol_plan = []
-        # Store the planning solution as a list of actions to be executed.
-        for node_id in dfs_preorder_nodes(self.sol_tree, source=0):
-            if self.sol_tree.nodes[node_id]['type'] == 'A':
-                if node_id >= max_id:
-                    self.sol_plan.append(self.sol_tree.nodes[node_id]['info'])
+            # get new plan
+            #  NEEDS NODE ID CHANGE
+            def is_or_after( node, node_list ):
+                raise "Unimplemented"
+            plan = [ *filter( lambda x: x[ "type" ] == "A" and is_or_after( node ),
+                             dfs_preorder_nodes( self.sol_tree ) ) ]
+            self.sol_plan = plan
 
-        return self.sol_plan
+            # test new plan from current point
+            sim_states = self.simulate( state )
+            for i in range( len( plan ) ):
+                if sim_states[ i ] == None:
+                    state_stack.insert( 0, sim_states[ i - 1 ] )
+                    node_stack.insert( 0, plan[ i ] )
+                    continue
+            # plan worked
+            break
+        return plan
+        # return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _add_nodes_and_edges(self, _id: int, parent_node_id: int, children_node_info_list: List[Tuple[str]]):
