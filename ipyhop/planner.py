@@ -40,6 +40,7 @@ class IPyHOP(object):
         self.sol_tree = DiGraph()
         self.blacklist = set()
         self.iterations = None
+        self.id_counter = -1
 
         self._verbose = 0
 
@@ -89,7 +90,7 @@ class IPyHOP(object):
         self.sol_plan = []
         self.sol_tree = DiGraph()
 
-        _id = 0
+        _id = self.get_next_id()
         parent_node_id = _id
         self.sol_tree.add_node(_id, info=('root',), type='D', status='NA')
         _id = self._add_nodes_and_edges(_id, _id, self.task_list)
@@ -358,7 +359,7 @@ class IPyHOP(object):
     # ******************************        Class Method Declaration        ****************************************** #
     def _add_nodes_and_edges(self, _id: int, parent_node_id: int, children_node_info_list: List[Tuple[str]]):
         for child_node_info in children_node_info_list:
-            _id += 1
+            _id = self.get_next_id()
             if isinstance(child_node_info, MultiGoal):  # equivalent to type(child_node_info) == MultiGoal
                 relevant_methods = self.methods.multigoal_method_dict[child_node_info.goal_tag]
                 self.sol_tree.add_node(_id, info=child_node_info, type='M', status='O', state=None,
@@ -383,11 +384,11 @@ class IPyHOP(object):
                 self.sol_tree.add_edge(parent_node_id, _id)
 
         if self.sol_tree.nodes[parent_node_id]['type'] == 'G':
-            _id += 1
+            _id = self.get_next_id()
             self.sol_tree.add_node(_id, info='VerifyGoal', type='VG', status='O')
             self.sol_tree.add_edge(parent_node_id, _id)
         elif self.sol_tree.nodes[parent_node_id]['type'] == 'M':
-            _id += 1
+            _id = self.get_next_id()
             self.sol_tree.add_node(_id, info='VerifyMultiGoal', type='VM', status='O')
             self.sol_tree.add_edge(parent_node_id, _id)
 
@@ -494,7 +495,14 @@ class IPyHOP(object):
         """
         self.blacklist.add(command)
 
+    # ******************************        Class Method Declaration        ****************************************** #
+    def get_next_id(self):
+        """
+                Used to ensure all nodes have unique id
 
+        """
+        self.id_counter += 1
+        return self.id_counter
 # ******************************************    Class Declaration End       ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #
 if __name__ == '__main__':
