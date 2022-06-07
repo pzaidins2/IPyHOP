@@ -40,7 +40,7 @@ class IPyHOP(object):
         self.sol_tree = DiGraph()
         self.blacklist = set()
         self.iterations = None
-        self.id_counter = -1
+        self.id_counter = 0
 
         self._verbose = 0
 
@@ -90,7 +90,7 @@ class IPyHOP(object):
         self.sol_plan = []
         self.sol_tree = DiGraph()
 
-        _id = self.get_next_id()
+        _id = 0
         parent_node_id = _id
         self.sol_tree.add_node(_id, info=('root',), type='D', status='NA')
         _id = self._add_nodes_and_edges(_id, self.task_list)
@@ -151,7 +151,9 @@ class IPyHOP(object):
                 if curr_node['type'] == 'T':
                     subtasks = None
                     # If methods are available for refining the task, use them.
-                    for method in curr_node['available_methods']:
+                    # print( curr_node['available_methods'])
+                    while curr_node['available_methods'] != set():
+                        method = next( iter( curr_node['available_methods'] ) )
                         curr_node['selected_method'] = method
                         curr_node['available_methods'] -= { method }
                         subtasks = method(self.state, *curr_node_info[1:])
@@ -203,7 +205,8 @@ class IPyHOP(object):
                             print('Iteration {}, Goal {} already achieved'.format(_iter, repr(curr_node_info)))
                     else:
                         # If methods are available for refining the goal, use them.
-                        for method in curr_node['available_methods']:
+                        while curr_node['available_methods'] != set():
+                            method = next( iter( curr_node['available_methods'] ) )
                             curr_node['selected_method'] = method
                             curr_node['available_methods'] -= {method}
                             subgoals = method(self.state, *curr_node_info[1:])
@@ -235,7 +238,8 @@ class IPyHOP(object):
                             print('Iteration {}, MultiGoal {} already achieved'.format(_iter, repr(curr_node_info)))
                     else:
                         # If methods are available for refining the goal, use them.
-                        for method in curr_node['available_methods']:
+                        while curr_node['available_methods'] != set():
+                            method = next( iter( curr_node['available_methods'] ) )
                             curr_node['selected_method'] = method
                             curr_node['available_methods'] -= {method}
                             subgoals = method(self.state, curr_node_info)
@@ -357,18 +361,19 @@ class IPyHOP(object):
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _add_nodes_and_edges(self, parent_node_id: int, children_node_info_list: List[Tuple[str]]):
+        _id = None
         for child_node_info in children_node_info_list:
             _id = self.get_next_id()
             if isinstance(child_node_info, MultiGoal):  # equivalent to type(child_node_info) == MultiGoal
                 relevant_methods = self.methods.multigoal_method_dict[child_node_info.goal_tag]
                 self.sol_tree.add_node(_id, info=child_node_info, type='M', status='O', state=None,
-                                       selected_method=None, available_methods=iter(relevant_methods),
+                                       selected_method=None, available_methods=set(relevant_methods),
                                        methods=relevant_methods)
                 self.sol_tree.add_edge(parent_node_id, _id)
             elif child_node_info[0] in self.methods.task_method_dict:
                 relevant_methods = self.methods.task_method_dict[child_node_info[0]]
                 self.sol_tree.add_node(_id, info=child_node_info, type='T', status='O', state=None,
-                                       selected_method=None, available_methods=iter(relevant_methods),
+                                       selected_method=None, available_methods=set(relevant_methods),
                                        methods=relevant_methods)
                 self.sol_tree.add_edge(parent_node_id, _id)
             elif child_node_info[0] in self.actions.action_dict:
@@ -378,7 +383,7 @@ class IPyHOP(object):
             elif child_node_info[0] in self.methods.goal_method_dict:
                 relevant_methods = self.methods.goal_method_dict[child_node_info[0]]
                 self.sol_tree.add_node(_id, info=child_node_info, type='G', status='O', state=None,
-                                       selected_method=None, available_methods=iter(relevant_methods),
+                                       selected_method=None, available_methods=set(relevant_methods),
                                        methods=relevant_methods)
                 self.sol_tree.add_edge(parent_node_id, _id)
 
@@ -447,9 +452,10 @@ class IPyHOP(object):
                     return p_node_id, node_id
                 if 'state' in node:
                     node['state'] = None
-
-        # self.sol_tree.remove_nodes_from(list(descendants(self.sol_tree, 0)))
+        print( self.sol_tree.nodes )
+        self.sol_tree.remove_nodes_from(list(descendants(self.sol_tree, 0)))
         return 0, 0
+
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _goals_not_achieved(self, multigoal_node_id):
