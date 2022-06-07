@@ -93,7 +93,7 @@ class IPyHOP(object):
         _id = self.get_next_id()
         parent_node_id = _id
         self.sol_tree.add_node(_id, info=('root',), type='D', status='NA')
-        _id = self._add_nodes_and_edges(_id, _id, self.task_list)
+        _id = self._add_nodes_and_edges(_id, self.task_list)
 
         self.iterations = self._planning(_id, parent_node_id)
         assert is_tree(self.sol_tree), "Error! Solution graph is not a tree."
@@ -106,13 +106,13 @@ class IPyHOP(object):
         return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def _planning(self, _id, parent_node_id):
+    def _planning(self, parent_node_id):
 
         _iter = 0
         for _iter in count(0):
             curr_node_id = None
             # Get the first Open node from the immediate successors of parent node. (using BFS)
-            for node_id in descendants( self.sol_tree, parent_node_id ):
+            for node_id in self.sol_tree.successors( parent_node_id ):
                 if self.sol_tree.nodes[node_id]['status'] == 'O':
                     curr_node_id = node_id
                     if self._verbose > 1:
@@ -124,7 +124,7 @@ class IPyHOP(object):
             if curr_node_id is None:
                 # Set the parent_node_id as predecessor of parent_node_id if available.
                 try:
-                    parent_node_id = ancestors( self.sol_tree, parent_node_id )[ 0 ]
+                    parent_node_id = next( self.sol_tree.predecessors( parent_node_id ) )
                 except StopIteration:  # if the parent_node_id has no predecessors (i.e. it is root) end refinement.
                     if self._verbose > 2:
                         print('Iteration {}, Planning Complete.'.format(_iter))
@@ -156,7 +156,7 @@ class IPyHOP(object):
                         subtasks = method(self.state, *curr_node_info[1:])
                         if subtasks is not None:
                             curr_node['status'] = 'C'
-                            _id = self._add_nodes_and_edges(_id, curr_node_id, subtasks)
+                            _id = self._add_nodes_and_edges(curr_node_id, subtasks)
                             parent_node_id = curr_node_id
                             if self._verbose > 2:
                                 print('Iteration {}, Task {} successfully refined'.format(_iter,
@@ -207,7 +207,7 @@ class IPyHOP(object):
                             subgoals = method(self.state, *curr_node_info[1:])
                             if subgoals is not None:
                                 curr_node['status'] = 'C'
-                                _id = self._add_nodes_and_edges(_id, curr_node_id, subgoals)
+                                _id = self._add_nodes_and_edges(curr_node_id, subgoals)
                                 parent_node_id = curr_node_id
                                 if self._verbose > 2:
                                     print('Iteration {}, Goal {} successfully refined'.format(
@@ -238,7 +238,7 @@ class IPyHOP(object):
                             subgoals = method(self.state, curr_node_info)
                             if subgoals is not None:
                                 curr_node['status'] = 'C'
-                                _id = self._add_nodes_and_edges(_id, curr_node_id, subgoals)
+                                _id = self._add_nodes_and_edges(curr_node_id, subgoals)
                                 parent_node_id = curr_node_id
                                 if self._verbose > 2:
                                     print('Iteration {}, MultiGoal {} successfully refined'.format(
@@ -306,7 +306,7 @@ class IPyHOP(object):
         node_id_stack = [ fail_node_id ]
         node_id = fail_node_id
         sol_tree = self.sol_tree
-
+        
         # traverse up tree until method node with valid alternative found
         while  node_id_stack != []:
             state = state_stack[ 0 ]
@@ -316,11 +316,11 @@ class IPyHOP(object):
             # remove successor nodes
             sol_tree.remove_nodes_from( descendants( sol_tree, node_id ) )
             node_id_stack[ 0 ] = node_id
-            node_id[ "available_methods" ] = set( node_id[ "available_methods" ] ) - { node_id[ "selected_method" ] }
+            node = sol_tree[ node_id ]
             # if there exists alternatives
-            if node_id[ "available_methods" ] != set():
+            if node[ "available_methods" ] != iter( set() ):
                 # DOES NOT WORK AS WRITTEN
-                self.iterations = self._planning(max_id, parent_node_id)
+                self.iterations = self._planning(node_id)
                 # check if node expanded fully
                 if node_id[ "status" ] == "O":
                     state_stack.pop()
@@ -337,10 +337,7 @@ class IPyHOP(object):
                 continue
 
             # get new plan
-            #  NEEDS NODE ID CHANGE
-            def is_or_after( node, node_list ):
-                raise "Unimplemented"
-            plan = [ *filter( lambda x: x[ "type" ] == "A" and is_or_after( node_id ),
+            plan = [ *filter( lambda x: x[ "type" ] == "A" and self.is_dependency_of( node_id, x ),
                              dfs_preorder_nodes( self.sol_tree ) ) ]
             self.sol_plan = plan
 
@@ -357,7 +354,7 @@ class IPyHOP(object):
         # return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def _add_nodes_and_edges(self, _id: int, parent_node_id: int, children_node_info_list: List[Tuple[str]]):
+    def _add_nodes_and_edges(self, parent_node_id: int, children_node_info_list: List[Tuple[str]]):
         for child_node_info in children_node_info_list:
             _id = self.get_next_id()
             if isinstance(child_node_info, MultiGoal):  # equivalent to type(child_node_info) == MultiGoal
@@ -444,7 +441,7 @@ class IPyHOP(object):
                 descendant_list = list(descendants(self.sol_tree, node_id))
                 if descendant_list:
                     self.sol_tree.remove_nodes_from(descendant_list)
-                    p_node_id = ancestors( sol_tree, node_id )[ 0 ]
+                    p_node_id = next( self.sol_tree.predecessors( node_id ) )
                     return p_node_id, node_id
                 if 'state' in node:
                     node['state'] = None
@@ -503,6 +500,33 @@ class IPyHOP(object):
         """
         self.id_counter += 1
         return self.id_counter
+
+    # ******************************        Class Method Declaration        ****************************************** #
+    def is_dependency_of(self, node_1_id: int, node_2_id: int) -> bool:
+        """
+                returns True if node_2 is any of: is node_1, right sibling of node_1, descendant of node_1
+
+        """
+        # equality case
+        if node_1_id == node_2_id:
+            return True
+        # node_1 is root special case
+        try:
+            parent_1_id = next( self.sol_tree.predecessors( node_1_id ) )
+        except StopIteration:
+            return True
+        # get parent descendants
+        parent_1_descendents = list( descendants( self.sol_tree,parent_1_id ) )
+        # node_2 is not descendant of node_1 parent
+        if node_2_id not in parent_1_descendents:
+            return False
+        # node_2 is right kin via parent_1 of node_1
+        if parent_1_descendents.index( node_1_id ) < parent_1_descendents.index( node_2_id ):
+            return True
+        # node_2 is left kin via parent_1 of node_1
+        else:
+            return False
+
 # ******************************************    Class Declaration End       ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #
 if __name__ == '__main__':
