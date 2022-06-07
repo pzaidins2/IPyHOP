@@ -4,7 +4,7 @@ File Description: File used for definition of actor
 """
 
 # ******************************************    Libraries to be imported    ****************************************** #
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Optional
 from ipyhop.state import State
 from ipyhop.actions import Actions
 from ipyhop.planner import IPyHOP
@@ -32,11 +32,16 @@ class Actor:
         :param initial_state: An instance of State class representing the initial state.
         :param to_do_list: A list of tuples of strings representing tasks and goals that must be completed and achieved.
     """
-    def complete_to_do(self, initial_state: State, to_do_list: List[Tuple[str]]) -> List[Tuple[str]]:
+    def complete_to_do(self, initial_state: State, to_do_list: List[Tuple[str]], verbose: Optional[int]=0) -> List[Tuple[str]]:
         # list of actions performed
         history = []
         # find plan to complete to_do_list
-        plan = self.planner.plan(initial_state, to_do_list)
+        plan = self.planner.plan(initial_state, to_do_list, verbose=verbose)
+        if verbose >= 1:
+            print("Initial plan created\n")
+            if verbose >= 2:
+                print("Plan is:\n" + str( plan ) + "\n")
+            print("Executing plan...\n")
         curr_state = initial_state
         # act on plan until completion or failure, replanning has needed
         while plan != []:
@@ -47,7 +52,16 @@ class Actor:
                 history.append( action )
                 # failure of action has occurred
                 if state == None:
-                    plan = self.planner.replan( state, action )
+                    if verbose >= 1:
+                        print("Plan failed at: " + str(action))
+                    plan = self.planner.replan( state, action, verbose )
+                    if verbose >= 1:
+                        print("New plan created\n")
+                        if verbose >= 2:
+                            print("New plan is:\n" + str(plan) + "\n")
+                        print("Executing new plan...\n")
+        if verbose >= 1:
+            print( "History is:\n" + str(history) + "\n" )
         return history
 
 

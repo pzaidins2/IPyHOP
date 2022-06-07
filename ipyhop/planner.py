@@ -309,26 +309,26 @@ class IPyHOP(object):
             # get top of stack
             node_id = node_id_stack[ 0 ]
             # replace node with parent
-            node_id = ancestors( sol_tree, node_id )[ 0 ]
+            parent_id = next( sol_tree.predecessors( node_id ) )
             # remove descendant nodes
-            sol_tree.remove_nodes_from( descendants( sol_tree, node_id ) )
+            sol_tree.remove_nodes_from( descendants( sol_tree, parent_id ) )
 
             # unexpand node
-            node = sol_tree[ node_id ]
+            node = sol_tree[ parent_id  ]
             node[ "status" ] = "O"
             # replace state with real state (fail node this will world state otherwise it will be new simulated
             # state
             node[ "state" ] = state_stack[ 0 ]
 
             # replace child with parent on stack
-            node_id_stack[ 0 ] = node_id
+            node_id_stack[ 0 ] = parent_id
 
             # there exists relevant methods we have not tried
             # propagate expansion downward, backtracking if needed but never higher than current node
             if node[ "available_methods" ] != set():
-                self.iterations += self._planning(node_id,verbose=verbose)
+                self.iterations += self._planning(parent_id ,verbose=verbose)
                 # check if node expanded fully
-                if node_id[ "status" ] == "O":
+                if parent_id[ "status" ] == "O":
                     node_id_stack.pop()
                     state_stack.pop()
                     continue
@@ -337,9 +337,9 @@ class IPyHOP(object):
                 # check if root reached or previous node is desendant of current node parent
                 # if so return to previous node on stack else continue traversing up
                 prev_node = node_id_stack[ 1 ] if len( node_id_stack ) > 1 else None
-                curr_parent = ancestors( sol_tree, node_id )[ 0 ]
+                grandparent_id = next( sol_tree.predecessors( parent_id ) )
                 # do this to prevent altering precondition guarantees
-                if prev_node in descendants( sol_tree, node_id ):
+                if prev_node in descendants( sol_tree, grandparent_id ):
                     node_id_stack.pop()
                     state_stack.pop()
                 continue
