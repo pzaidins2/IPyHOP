@@ -139,12 +139,12 @@ class IPyHOP(object):
 
             # Else, it means that an Open node was found in the subgraph. Refine the node.
             else:
-                curr_node_id, parent_node_id = self._node_refine( curr_node_id, parent_node_id )
+                curr_node_id, parent_node_id = self._node_refine( curr_node_id, parent_node_id, _iter )
 
         return _iter
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def _node_refine(self, curr_node_id: int, parent_node_id: int ):
+    def _node_refine(self, curr_node_id: int, parent_node_id: int, _iter: int ):
         curr_node = self.sol_tree.nodes[curr_node_id]
         if 'state' in curr_node:
             # If curr_node already has a value for state, it means that the algorithm backtracked to this node.
@@ -298,46 +298,62 @@ class IPyHOP(object):
     # ******************************        Class Method Declaration        ****************************************** #
     def replan(self, state: State, fail_node_id: int, verbose: Optional[int] = 0) -> _p_type:
 
-        state_stack = [ state ]
+
         node_id_stack = [ fail_node_id ]
+        state_stack = [ state.copy() ]
         node_id = fail_node_id
         sol_tree = self.sol_tree
 
         # traverse up tree until method node with valid alternative found
         while node_id_stack != []:
-            state = state_stack[ 0 ]
-            node_id = state_stack[ 0 ]
+            # get top of stack
+            node_id = node_id_stack[ 0 ]
             # replace node with parent
             node_id = ancestors( sol_tree, node_id )[ 0 ]
-            # remove successor nodes
+            # remove descendant nodes
             sol_tree.remove_nodes_from( descendants( sol_tree, node_id ) )
-            node_id_stack[ 0 ] = node_id
+
+            # unexpand node
             node = sol_tree[ node_id ]
-            # if there exists alternatives
+            node[ "status" ] = "O"
+            # replace state with real state (fail node this will world state otherwise it will be new simulated
+            # state
+            node[ "state" ] = state_stack[ 0 ]
+
+            # replace child with parent on stack
+            node_id_stack[ 0 ] = node_id
+
+            # there exists relevant methods we have not tried
+            # propagate expansion downward, backtracking if needed but never higher than current node
             if node[ "available_methods" ] != set():
-                self.iterations += self._planning(node_id)
+                self.iterations += self._planning(node_id,verbose=verbose)
                 # check if node expanded fully
                 if node_id[ "status" ] == "O":
-                    state_stack.pop()
                     node_id_stack.pop()
+                    state_stack.pop()
                     continue
+            # deadend move up
             else:
                 # check if root reached or previous node is desendant of current node parent
                 # if so return to previous node on stack else continue traversing up
                 prev_node = node_id_stack[ 1 ] if len( node_id_stack ) > 1 else None
                 curr_parent = ancestors( sol_tree, node_id )[ 0 ]
-                if node_id[ "info" ] == "root" or prev_node in descendants( sol_tree, node_id ):
-                    state_stack.pop()
+                # do this to prevent altering precondition guarantees
+                if prev_node in descendants( sol_tree, node_id ):
                     node_id_stack.pop()
+                    state_stack.pop()
                 continue
 
             # get new plan
+            # plan is actions in left-right order, ignore previously executed commands unless
+            # needed to complete immediate goal/task
             plan = [ *filter( lambda x: x[ "type" ] == "A" and self.is_dependency_of( node_id, x ),
                              dfs_preorder_nodes( self.sol_tree ) ) ]
+            # plan going forward is stored in PyHOP object
             self.sol_plan = plan
 
-            # test new plan from current point
-            sim_states = self.simulate( state )
+            # simulate new plan from current point
+            sim_states = self.simulate( true_state )
             for i in range( len( plan ) ):
                 if sim_states[ i ] == None:
                     state_stack.insert( 0, sim_states[ i - 1 ] )
@@ -421,7 +437,9 @@ class IPyHOP(object):
         return max_id
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def _backtrack(self, p_node_id: int, c_node_id: int):
+    def _backtrack(self, p_node_id: int, c_node_id: int, verbose: Optional[int] = 0 ):
+        # if verbose == 3:
+        #     print("Backtracking...\n")
         c_node = self.sol_tree.nodes[c_node_id]
         c_type = c_node['type']
         if c_type == 'T' or c_type == 'G' or c_type == 'M':
