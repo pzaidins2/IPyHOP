@@ -106,9 +106,10 @@ class IPyHOP(object):
         return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def _planning(self, parent_node_id):
+    def _planning(self, sub_graph_root_node_id):
 
         _iter = 0
+        parent_node_id = sub_graph_root_node_id
         for _iter in count(0):
             curr_node_id = None
             # Get the first Open node from the immediate successors of parent node. (using BFS)
@@ -125,6 +126,9 @@ class IPyHOP(object):
                 # Set the parent_node_id as predecessor of parent_node_id if available.
                 try:
                     parent_node_id = next( self.sol_tree.predecessors( parent_node_id ) )
+                    # stop iterations at sub graph root
+                    if curr_node_id == sub_graph_root_node_id:
+                        break
                 except StopIteration:  # if the parent_node_id has no predecessors (i.e. it is root) end refinement.
                     if self._verbose > 2:
                         print('Iteration {}, Planning Complete.'.format(_iter))
@@ -135,179 +139,164 @@ class IPyHOP(object):
 
             # Else, it means that an Open node was found in the subgraph. Refine the node.
             else:
-                curr_node = self.sol_tree.nodes[curr_node_id]
-                if 'state' in curr_node:
-                    # If curr_node already has a value for state, it means that the algorithm backtracked to this node.
-                    if curr_node['state']:
-                        # Modify the current state as the saved state at that node.
-                        self.state.update(curr_node['state'].copy())
-                    # If curr_node doesn't have value for state, it means that the node is visited for the first time.
-                    else:
-                        # Save the current state in the node.
-                        curr_node['state'] = self.state.copy()
-                curr_node_info = curr_node['info']
-
-                # If current node is a Task
-                if curr_node['type'] == 'T':
-                    subtasks = None
-                    # If methods are available for refining the task, use them.
-                    # print( curr_node['available_methods'])
-                    while curr_node['available_methods'] != set():
-                        method = next( iter( curr_node['available_methods'] ) )
-                        curr_node['selected_method'] = method
-                        curr_node['available_methods'] -= { method }
-                        subtasks = method(self.state, *curr_node_info[1:])
-                        if subtasks is not None:
-                            curr_node['status'] = 'C'
-                            _id = self._add_nodes_and_edges(curr_node_id, subtasks)
-                            parent_node_id = curr_node_id
-                            if self._verbose > 2:
-                                print('Iteration {}, Task {} successfully refined'.format(_iter,
-                                                                                          repr(curr_node_info)))
-                                print('Iteration {}, Parent node modified to {}.'.format(
-                                    _iter, repr(self.sol_tree.nodes[parent_node_id]['info'])))
-                            break
-                    if subtasks is None:
-                        parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                        if self._verbose > 2:
-                            print('Iteration {}, Task {} refinement failed'.format(_iter, repr(curr_node_info)))
-                            print('Iteration {}, Backtracking to {}.'.format(
-                                _iter, repr(self.sol_tree.nodes[curr_node_id]['info'])))
-
-                # If current node is an Action
-                elif curr_node['type'] == 'A':
-                    new_state = None
-                    # If the Action is not blacklisted
-                    if curr_node_info not in self.blacklist:
-                        new_state = curr_node['action'](self.state.copy(), *curr_node_info[1:])
-                        # If Action was successful, update the state.
-                        if new_state is not None:
-                            curr_node['status'] = 'C'
-                            self.state.update(new_state)
-                            if self._verbose > 2:
-                                print('Iteration {}, Action {} successful.'.format(_iter, repr(curr_node_info)))
-                    if new_state is None:
-                        parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                        if self._verbose > 2:
-                            print('Iteration {}, Action {} failed.'.format(_iter, repr(curr_node_info)))
-                            print('Iteration {}, Backtracking to {}.'.format(
-                                _iter, repr(self.sol_tree.nodes[curr_node_id]['info'])))
-
-                # If current node is a Goal
-                elif curr_node['type'] == 'G':
-                    subgoals = None
-                    state_var, arg, desired_val = curr_node_info
-                    # Skip goal refinement if already achieved
-                    if self.state.__dict__[state_var][arg] == desired_val:
-                        curr_node['status'] = 'C'
-                        subgoals = []
-                        if self._verbose > 2:
-                            print('Iteration {}, Goal {} already achieved'.format(_iter, repr(curr_node_info)))
-                    else:
-                        # If methods are available for refining the goal, use them.
-                        while curr_node['available_methods'] != set():
-                            method = next( iter( curr_node['available_methods'] ) )
-                            curr_node['selected_method'] = method
-                            curr_node['available_methods'] -= {method}
-                            subgoals = method(self.state, *curr_node_info[1:])
-                            if subgoals is not None:
-                                curr_node['status'] = 'C'
-                                _id = self._add_nodes_and_edges(curr_node_id, subgoals)
-                                parent_node_id = curr_node_id
-                                if self._verbose > 2:
-                                    print('Iteration {}, Goal {} successfully refined'.format(
-                                        _iter, repr(curr_node_info)))
-                                    print('Iteration {}, Parent node modified to {}.'.format(
-                                        _iter, repr(self.sol_tree.nodes[parent_node_id]['info'])))
-                                break
-                    if subgoals is None:
-                        parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                        if self._verbose > 2:
-                            print('Iteration {}, Goal {} refinement failed'.format(_iter, repr(curr_node_info)))
-                            print('Iteration {}, Backtracking to {}.'.format(
-                                _iter, repr(self.sol_tree.nodes[curr_node_id]['info'])))
-
-                # If current node is a MultiGoal
-                elif curr_node['type'] == 'M':
-                    subgoals = None
-                    unachieved_goals = self._goals_not_achieved(curr_node_id)
-                    if not unachieved_goals:
-                        curr_node['status'] = "C"
-                        subgoals = []
-                        if self._verbose > 2:
-                            print('Iteration {}, MultiGoal {} already achieved'.format(_iter, repr(curr_node_info)))
-                    else:
-                        # If methods are available for refining the goal, use them.
-                        while curr_node['available_methods'] != set():
-                            method = next( iter( curr_node['available_methods'] ) )
-                            curr_node['selected_method'] = method
-                            curr_node['available_methods'] -= {method}
-                            subgoals = method(self.state, curr_node_info)
-                            if subgoals is not None:
-                                curr_node['status'] = 'C'
-                                _id = self._add_nodes_and_edges(curr_node_id, subgoals)
-                                parent_node_id = curr_node_id
-                                if self._verbose > 2:
-                                    print('Iteration {}, MultiGoal {} successfully refined'.format(
-                                        _iter, repr(curr_node_info)))
-                                    print('Iteration {}, Parent node modified to {}.'.format(
-                                        _iter, repr(self.sol_tree.nodes[parent_node_id]['info'])))
-                                break
-                    if subgoals is None:
-                        parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                        if self._verbose > 2:
-                            print(
-                                'Iteration {}, MultiGoal {} refinement failed'.format(_iter, repr(curr_node_info)))
-                            print('Iteration {}, Backtracking to {}.'.format(
-                                _iter, repr(self.sol_tree.nodes[curr_node_id]['info'])))
-
-                elif curr_node['type'] == 'VG':
-                    state_var, arg, desired_val = self.sol_tree.nodes[parent_node_id]['info']
-                    if self.state.__dict__[state_var][arg] == desired_val:
-                        curr_node['status'] = "C"
-                    else:
-                        parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                        if self._verbose > 2:
-                            curr_node_info = self.sol_tree.nodes[curr_node_id]['info']
-                            print('Iteration {}, Goal {} Verification failed.'.format(_iter, repr(curr_node_info)))
-                            print('Iteration {}, Backtracking to {}.'.format(_iter, repr(curr_node_info)))
-
-                elif curr_node['type'] == 'VM':
-                    unachieved_goals = self._goals_not_achieved(parent_node_id)
-                    if not unachieved_goals:
-                        curr_node['status'] = "C"
-                    else:
-                        parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                        if self._verbose > 2:
-                            curr_node_info = self.sol_tree.nodes[curr_node_id]['info']
-                            print('Iteration {}, MultiGoal {} Verification failed.'.format(_iter,
-                                                                                           repr(curr_node_info)))
-                            print('Iteration {}, Backtracking to {}.'.format(_iter, repr(curr_node_info)))
+                curr_node_id, parent_node_id = self._node_refine( curr_node_id, parent_node_id )
 
         return _iter
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def replan(self, state: State, fail_node_id: int, verbose: Optional[int] = 0) -> _p_type:
+    def _node_refine(self, curr_node_id: int, parent_node_id: int ):
+        curr_node = self.sol_tree.nodes[curr_node_id]
+        if 'state' in curr_node:
+            # If curr_node already has a value for state, it means that the algorithm backtracked to this node.
+            if curr_node['state']:
+                # Modify the current state as the saved state at that node.
+                self.state.update(curr_node['state'].copy())
+            # If curr_node doesn't have value for state, it means that the node is visited for the first time.
+            else:
+                # Save the current state in the node.
+                curr_node['state'] = self.state.copy()
+        curr_node_info = curr_node['info']
 
-        # self.state = state.copy()
-        # fail_node_id = -1
-        # for node in self.sol_tree.nodes:
-        #     if self.sol_tree.nodes[node]['info'] == fail_node:
-        #         fail_node_id = node
-        #
-        # assert (fail_node_id > -1), "Couldn't find the failure node."
-        # max_id = self._post_failure_modify(fail_node_id)
-        # parent_node_id, curr_node_id = self._backtrack(list(self.sol_tree.predecessors(fail_node_id))[0], fail_node_id)
-        #
-        # self.iterations = self._planning(max_id, parent_node_id)
-        # assert is_tree(self.sol_tree), "Error! Solution graph is not a tree."
-        #
-        # self.sol_plan = []
-        # # Store the planning solution as a list of actions to be executed.
-        # for node_id in dfs_preorder_nodes(self.sol_tree, source=0):
-        #     if self.sol_tree.nodes[node_id]['type'] == 'A':
-        #         if node_id >= max_id:
-        #             self.sol_plan.append(self.sol_tree.nodes[node_id]['info'])
+        # If current node is a Task
+        if curr_node['type'] == 'T':
+            subtasks = None
+            # If methods are available for refining the task, use them.
+            # print( curr_node['available_methods'])
+            while curr_node['available_methods'] != set():
+                method = next(iter(curr_node['available_methods']))
+                curr_node['selected_method'] = method
+                curr_node['available_methods'] -= {method}
+                subtasks = method(self.state, *curr_node_info[1:])
+                if subtasks is not None:
+                    curr_node['status'] = 'C'
+                    _id = self._add_nodes_and_edges(curr_node_id, subtasks)
+                    parent_node_id = curr_node_id
+                    if self._verbose > 2:
+                        print('Iteration {}, Task {} successfully refined'.format(_iter,
+                                                                                  repr(curr_node_info)))
+                        print('Iteration {}, Parent node modified to {}.'.format(
+                            _iter, repr(self.sol_tree.nodes[parent_node_id]['info'])))
+                    break
+            if subtasks is None:
+                parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
+                if self._verbose > 2:
+                    print('Iteration {}, Task {} refinement failed'.format(_iter, repr(curr_node_info)))
+                    print('Iteration {}, Backtracking to {}.'.format(
+                        _iter, repr(self.sol_tree.nodes[curr_node_id]['info'])))
+
+        # If current node is an Action
+        elif curr_node['type'] == 'A':
+            new_state = None
+            # If the Action is not blacklisted
+            if curr_node_info not in self.blacklist:
+                new_state = curr_node['action'](self.state.copy(), *curr_node_info[1:])
+                # If Action was successful, update the state.
+                if new_state is not None:
+                    curr_node['status'] = 'C'
+                    self.state.update(new_state)
+                    if self._verbose > 2:
+                        print('Iteration {}, Action {} successful.'.format(_iter, repr(curr_node_info)))
+            if new_state is None:
+                parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
+                if self._verbose > 2:
+                    print('Iteration {}, Action {} failed.'.format(_iter, repr(curr_node_info)))
+                    print('Iteration {}, Backtracking to {}.'.format(
+                        _iter, repr(self.sol_tree.nodes[curr_node_id]['info'])))
+
+        # If current node is a Goal
+        elif curr_node['type'] == 'G':
+            subgoals = None
+            state_var, arg, desired_val = curr_node_info
+            # Skip goal refinement if already achieved
+            if self.state.__dict__[state_var][arg] == desired_val:
+                curr_node['status'] = 'C'
+                subgoals = []
+                if self._verbose > 2:
+                    print('Iteration {}, Goal {} already achieved'.format(_iter, repr(curr_node_info)))
+            else:
+                # If methods are available for refining the goal, use them.
+                while curr_node['available_methods'] != set():
+                    method = next(iter(curr_node['available_methods']))
+                    curr_node['selected_method'] = method
+                    curr_node['available_methods'] -= {method}
+                    subgoals = method(self.state, *curr_node_info[1:])
+                    if subgoals is not None:
+                        curr_node['status'] = 'C'
+                        _id = self._add_nodes_and_edges(curr_node_id, subgoals)
+                        parent_node_id = curr_node_id
+                        if self._verbose > 2:
+                            print('Iteration {}, Goal {} successfully refined'.format(
+                                _iter, repr(curr_node_info)))
+                            print('Iteration {}, Parent node modified to {}.'.format(
+                                _iter, repr(self.sol_tree.nodes[parent_node_id]['info'])))
+                        break
+            if subgoals is None:
+                parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
+                if self._verbose > 2:
+                    print('Iteration {}, Goal {} refinement failed'.format(_iter, repr(curr_node_info)))
+                    print('Iteration {}, Backtracking to {}.'.format(
+                        _iter, repr(self.sol_tree.nodes[curr_node_id]['info'])))
+
+        # If current node is a MultiGoal
+        elif curr_node['type'] == 'M':
+            subgoals = None
+            unachieved_goals = self._goals_not_achieved(curr_node_id)
+            if not unachieved_goals:
+                curr_node['status'] = "C"
+                subgoals = []
+                if self._verbose > 2:
+                    print('Iteration {}, MultiGoal {} already achieved'.format(_iter, repr(curr_node_info)))
+            else:
+                # If methods are available for refining the goal, use them.
+                while curr_node['available_methods'] != set():
+                    method = next(iter(curr_node['available_methods']))
+                    curr_node['selected_method'] = method
+                    curr_node['available_methods'] -= {method}
+                    subgoals = method(self.state, curr_node_info)
+                    if subgoals is not None:
+                        curr_node['status'] = 'C'
+                        _id = self._add_nodes_and_edges(curr_node_id, subgoals)
+                        parent_node_id = curr_node_id
+                        if self._verbose > 2:
+                            print('Iteration {}, MultiGoal {} successfully refined'.format(
+                                _iter, repr(curr_node_info)))
+                            print('Iteration {}, Parent node modified to {}.'.format(
+                                _iter, repr(self.sol_tree.nodes[parent_node_id]['info'])))
+                        break
+            if subgoals is None:
+                parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
+                if self._verbose > 2:
+                    print(
+                        'Iteration {}, MultiGoal {} refinement failed'.format(_iter, repr(curr_node_info)))
+                    print('Iteration {}, Backtracking to {}.'.format(
+                        _iter, repr(self.sol_tree.nodes[curr_node_id]['info'])))
+
+        elif curr_node['type'] == 'VG':
+            state_var, arg, desired_val = self.sol_tree.nodes[parent_node_id]['info']
+            if self.state.__dict__[state_var][arg] == desired_val:
+                curr_node['status'] = "C"
+            else:
+                parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
+                if self._verbose > 2:
+                    curr_node_info = self.sol_tree.nodes[curr_node_id]['info']
+                    print('Iteration {}, Goal {} Verification failed.'.format(_iter, repr(curr_node_info)))
+                    print('Iteration {}, Backtracking to {}.'.format(_iter, repr(curr_node_info)))
+
+        elif curr_node['type'] == 'VM':
+            unachieved_goals = self._goals_not_achieved(parent_node_id)
+            if not unachieved_goals:
+                curr_node['status'] = "C"
+            else:
+                parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
+                if self._verbose > 2:
+                    curr_node_info = self.sol_tree.nodes[curr_node_id]['info']
+                    print('Iteration {}, MultiGoal {} Verification failed.'.format(_iter,
+                                                                                   repr(curr_node_info)))
+                    print('Iteration {}, Backtracking to {}.'.format(_iter, repr(curr_node_info)))
+        return curr_node_id, parent_node_id
+
+    # ******************************        Class Method Declaration        ****************************************** #
+    def replan(self, state: State, fail_node_id: int, verbose: Optional[int] = 0) -> _p_type:
 
         state_stack = [ state ]
         node_id_stack = [ fail_node_id ]
@@ -315,7 +304,7 @@ class IPyHOP(object):
         sol_tree = self.sol_tree
 
         # traverse up tree until method node with valid alternative found
-        while  node_id_stack != []:
+        while node_id_stack != []:
             state = state_stack[ 0 ]
             node_id = state_stack[ 0 ]
             # replace node with parent
@@ -326,7 +315,7 @@ class IPyHOP(object):
             node = sol_tree[ node_id ]
             # if there exists alternatives
             if node[ "available_methods" ] != set():
-                self.iterations = self._planning(node_id)
+                self.iterations += self._planning(node_id)
                 # check if node expanded fully
                 if node_id[ "status" ] == "O":
                     state_stack.pop()
