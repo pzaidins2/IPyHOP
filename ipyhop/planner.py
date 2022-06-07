@@ -95,7 +95,7 @@ class IPyHOP(object):
         self.sol_tree.add_node(_id, info=('root',), type='D', status='NA')
         _id = self._add_nodes_and_edges(_id, self.task_list)
 
-        self.iterations = self._planning(_id, parent_node_id)
+        self.iterations = self._planning(parent_node_id)
         assert is_tree(self.sol_tree), "Error! Solution graph is not a tree."
 
         # Store the planning solution as a list of actions to be executed.
@@ -153,6 +153,7 @@ class IPyHOP(object):
                     # If methods are available for refining the task, use them.
                     for method in curr_node['available_methods']:
                         curr_node['selected_method'] = method
+                        curr_node['available_methods'] -= { method }
                         subtasks = method(self.state, *curr_node_info[1:])
                         if subtasks is not None:
                             curr_node['status'] = 'C'
@@ -204,6 +205,7 @@ class IPyHOP(object):
                         # If methods are available for refining the goal, use them.
                         for method in curr_node['available_methods']:
                             curr_node['selected_method'] = method
+                            curr_node['available_methods'] -= {method}
                             subgoals = method(self.state, *curr_node_info[1:])
                             if subgoals is not None:
                                 curr_node['status'] = 'C'
@@ -235,6 +237,7 @@ class IPyHOP(object):
                         # If methods are available for refining the goal, use them.
                         for method in curr_node['available_methods']:
                             curr_node['selected_method'] = method
+                            curr_node['available_methods'] -= {method}
                             subgoals = method(self.state, curr_node_info)
                             if subgoals is not None:
                                 curr_node['status'] = 'C'
@@ -306,7 +309,7 @@ class IPyHOP(object):
         node_id_stack = [ fail_node_id ]
         node_id = fail_node_id
         sol_tree = self.sol_tree
-        
+
         # traverse up tree until method node with valid alternative found
         while  node_id_stack != []:
             state = state_stack[ 0 ]
@@ -318,8 +321,7 @@ class IPyHOP(object):
             node_id_stack[ 0 ] = node_id
             node = sol_tree[ node_id ]
             # if there exists alternatives
-            if node[ "available_methods" ] != iter( set() ):
-                # DOES NOT WORK AS WRITTEN
+            if node[ "available_methods" ] != set():
                 self.iterations = self._planning(node_id)
                 # check if node expanded fully
                 if node_id[ "status" ] == "O":
@@ -408,7 +410,7 @@ class IPyHOP(object):
             if c_type == 'T' or c_type == 'G' or c_type == 'M':
                 c_node['state'] = None
                 c_node['selected_method'] = None
-                c_node['available_methods'] = iter(c_node['methods'])
+                c_node['available_methods'] = set(c_node['methods'])
                 descendant_list = list(descendants(self.sol_tree, node_id))
                 self.sol_tree.remove_nodes_from(descendant_list)
 
@@ -431,7 +433,7 @@ class IPyHOP(object):
         if c_type == 'T' or c_type == 'G' or c_type == 'M':
             c_node['state'] = None
             c_node['selected_method'] = None
-            c_node['available_methods'] = iter(c_node['methods'])
+            c_node['available_methods'] = set(c_node['methods'])
 
         dfs_list = list(dfs_preorder_nodes(self.sol_tree, source=p_node_id))
         for node_id in reversed(dfs_list):
@@ -446,7 +448,7 @@ class IPyHOP(object):
                 if 'state' in node:
                     node['state'] = None
 
-        self.sol_tree.remove_nodes_from(list(descendants(self.sol_tree, 0)))
+        # self.sol_tree.remove_nodes_from(list(descendants(self.sol_tree, 0)))
         return 0, 0
 
     # ******************************        Class Method Declaration        ****************************************** #
