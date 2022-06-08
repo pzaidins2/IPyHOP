@@ -8,7 +8,7 @@ from __future__ import print_function
 from examples.robosub.domain.robosub_methods import methods
 from examples.robosub.domain.robosub_actions import actions
 from examples.robosub.problem.robosub_problem_1 import init_state, task_list
-from ipyhop import IPyHOP, planar_plot, post_failure_tasks
+from ipyhop import IPyHOP, planar_plot#, post_failure_tasks
 
 
 # ******************************************        Main Program Start      ****************************************** #
