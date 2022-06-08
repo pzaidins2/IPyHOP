@@ -24,13 +24,14 @@ def main():
     plan = planner.plan(init_state, task_list, verbose=3)
     graph = planner.sol_tree
 
-    planar_plot(graph, root_node=0)
+
 
     print('Plan: ')
     for action in plan:
         print('\t', action)
-
-    fail_action = ('a_drop_garlic_closed_coffin', 'gm2', 'c1', 'l3')
+    planar_plot(graph, root_node=0)
+    # fail_action = ('a_drop_garlic_closed_coffin', 'gm2', 'c1', 'l3')
+    fail_action = ('a_drop_garlic_closed_coffin', 'gm1', 'c1', 'l3')
     # print( planner.sol_tree.nodes(data=True))
     for k, v in planner.sol_tree.nodes(data=True):
         # print( k )
@@ -38,11 +39,12 @@ def main():
         # print( v["info"])
         if v[ "info" ] == fail_action:
             fail_node_id = k
+            fail_node = v
             break
     new_task_list = planner.replan(planner.sol_tree, fail_node_id, verbose=3)
-    print("If failure occurs at: ", fail_node_id)
-    print("New task list will be: ", new_task_list)
-
+    print("If failure occurs at: " + str(fail_node_id))
+    print("New task list will be: " + str(new_task_list))
+    planar_plot(graph, root_node=0)
 
 # ******************************************        Main Program End        ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #

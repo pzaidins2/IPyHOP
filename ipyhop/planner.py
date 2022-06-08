@@ -107,7 +107,7 @@ class IPyHOP(object):
         return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def _planning(self, sub_graph_root_node_id):
+    def _planning(self, sub_graph_root_node_id, verbose: Optional[int]=0):
 
         _iter = 0
         parent_node_id = sub_graph_root_node_id
@@ -137,6 +137,8 @@ class IPyHOP(object):
                 if self._verbose > 2:
                     print('Iteration {}, Parent node modified to {}.'.format(
                         _iter, repr(self.sol_tree.nodes[parent_node_id]['info'])))
+                    print('Iteration {}, Child nodes are now: {}.'.format(
+                        _iter, repr([self.sol_tree.nodes[x]['info'] for x in self.sol_tree.successors(parent_node_id)])))
 
             # Else, it means that an Open node was found in the subgraph. Refine the node.
             else:
@@ -304,7 +306,7 @@ class IPyHOP(object):
         state_stack = [ state.copy() ]
         node_id = fail_node_id
         sol_tree = self.sol_tree
-
+        plan = []
         # problem state and node are stored in stacks
         # if node cannot be repaired try reparing parent
         # once repair complete simulate until problem or success
@@ -312,16 +314,25 @@ class IPyHOP(object):
         # if at any point in repair process the previous node on the stack is descendant of current problem,
         # pop from stack and continue repair procedure from previous node
         while node_id_stack != []:
+            if verbose >= 3:
+                print("Loop Head, Node Stack is: " + str(node_id_stack ))
             # get top of stack
             node_id = node_id_stack[ 0 ]
             # replace node with parent
             parent_id = next( sol_tree.predecessors( node_id ) )
+
+            # print( parent_id )
             # remove descendant nodes
+            print(sol_tree.nodes[parent_id])
+            print(descendants(sol_tree, parent_id))
             sol_tree.remove_nodes_from( descendants( sol_tree, parent_id ) )
 
+
             # unexpand node
-            node = sol_tree[ parent_id  ]
-            node[ "status" ] = "O"
+            node = sol_tree.nodes[ parent_id  ]
+            # print( node )
+            node["status"] = "O"
+            node["selected_method"] = None
             # replace state with real state (fail node this will world state otherwise it will be new simulated
             # state
             node[ "state" ] = state_stack[ 0 ]
@@ -333,11 +344,11 @@ class IPyHOP(object):
             # propagate expansion downward, backtracking if needed but never higher than current node
             if node[ "available_methods" ] != set():
                 self.iterations += self._planning(parent_id ,verbose=verbose)
-                # check if node expanded fully
-                if node[ "status" ] == "O":
-                    node_id_stack.pop()
-                    state_stack.pop()
-                    continue
+                # # check if node expanded fully
+                # if node[ "status" ] == "O":
+                #     node_id_stack.pop()
+                #     state_stack.pop()
+                #     continue
             # deadend move up
             else:
                 # check if root reached or previous node is desendant of current node parent
@@ -356,12 +367,13 @@ class IPyHOP(object):
             # needed to complete immediate goal/task
 
             # don't reexecute tree branches prior to current failure point parent
-            preorder_nodes = dfs_preorder_nodes( self.sol_tree )
+            preorder_nodes = [*dfs_preorder_nodes( self.sol_tree )]
+            print(preorder_nodes)
             parent_preorder_index = preorder_nodes.index( parent_id )
             # we care only about actions that still need to be executed
             plan = [ *filter( lambda x: x[ "type" ] == "A", preorder_nodes[ parent_preorder_index: ] ) ]
             # plan going forward is stored in PyHOP object
-            self.sol_plan = plan
+
 
             # simulate new plan from current point
             sim_states = self.simulate( true_state )
@@ -373,6 +385,7 @@ class IPyHOP(object):
                     continue
             # plan worked
             break
+        self.sol_plan = plan
         return plan
         # return self.sol_plan
 
