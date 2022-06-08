@@ -112,7 +112,7 @@ def a_surface(state, cm, s, l):
 
 actions = Actions()
 actions.declare_actions([a_search_for, a_localize, a_localize_ap, a_move, a_cross_gate_40, a_cross_gate_60, a_pick,
-                             a_touch_front_v, a_touch_back_v, a_trace_guide_path, a_open_c, a_drop_garlic_open_coffin,
+                             a_touch_front_v, a_touch_back_v, a_trace_guide_path, a_open_c,
                              a_drop_garlic_closed_coffin, a_decapitate_d, a_stake_dracula, a_stake_decapitated_dracula,
                              a_surface])
 

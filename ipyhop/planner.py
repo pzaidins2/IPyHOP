@@ -93,6 +93,7 @@ class IPyHOP(object):
         _id = 0
         parent_node_id = _id
         self.sol_tree.add_node(_id, info=('root',), type='D', status='NA')
+        self.sol_tree.add_node(_id, info=('root',), type='D', status='NA')
         _id = self._add_nodes_and_edges(_id, self.task_list)
 
         self.iterations = self._planning(parent_node_id)
@@ -102,7 +103,7 @@ class IPyHOP(object):
         for node_id in dfs_preorder_nodes(self.sol_tree, source=0):
             if self.sol_tree.nodes[node_id]['type'] == 'A':
                 self.sol_plan.append(self.sol_tree.nodes[node_id]['info'])
-
+        # print(self.sol_tree.nodes[0])
         return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
@@ -304,7 +305,12 @@ class IPyHOP(object):
         node_id = fail_node_id
         sol_tree = self.sol_tree
 
-        # traverse up tree until method node with valid alternative found
+        # problem state and node are stored in stacks
+        # if node cannot be repaired try reparing parent
+        # once repair complete simulate until problem or success
+        # if problem place on stack and repeat repair process
+        # if at any point in repair process the previous node on the stack is descendant of current problem,
+        # pop from stack and continue repair procedure from previous node
         while node_id_stack != []:
             # get top of stack
             node_id = node_id_stack[ 0 ]
@@ -328,7 +334,7 @@ class IPyHOP(object):
             if node[ "available_methods" ] != set():
                 self.iterations += self._planning(parent_id ,verbose=verbose)
                 # check if node expanded fully
-                if parent_id[ "status" ] == "O":
+                if node[ "status" ] == "O":
                     node_id_stack.pop()
                     state_stack.pop()
                     continue
@@ -339,6 +345,7 @@ class IPyHOP(object):
                 prev_node = node_id_stack[ 1 ] if len( node_id_stack ) > 1 else None
                 grandparent_id = next( sol_tree.predecessors( parent_id ) )
                 # do this to prevent altering precondition guarantees
+                # that is we have gone far enough up the tree that the previous node will be orphaned by repair
                 if prev_node in descendants( sol_tree, grandparent_id ):
                     node_id_stack.pop()
                     state_stack.pop()
@@ -359,6 +366,7 @@ class IPyHOP(object):
             # simulate new plan from current point
             sim_states = self.simulate( true_state )
             for i in range( len( plan ) ):
+                # if a problem occurs put state at failure and attempted node on stack
                 if sim_states[ i ] == None:
                     state_stack.insert( 0, sim_states[ i - 1 ] )
                     node_id_stack.insert( 0, plan[ i ] )

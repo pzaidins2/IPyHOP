@@ -8,7 +8,8 @@ from __future__ import print_function
 from examples.robosub.domain.robosub_methods import methods
 from examples.robosub.domain.robosub_actions import actions
 from examples.robosub.problem.robosub_problem_1 import init_state, task_list
-from ipyhop import IPyHOP, planar_plot, post_failure_tasks
+from networkx import dfs_preorder_nodes
+from ipyhop import IPyHOP, planar_plot
 
 
 # ******************************************        Main Program Start      ****************************************** #
@@ -20,7 +21,7 @@ def main():
     planner = IPyHOP(methods, actions)
     planner.blacklist_command(('a_touch_back_v', 'v1', 'l2'))
     planner.blacklist_command(('a_touch_front_v', 'v1', 'l2'))
-    plan = planner.plan(init_state, task_list, verbose=0)
+    plan = planner.plan(init_state, task_list, verbose=3)
     graph = planner.sol_tree
 
     planar_plot(graph, root_node=0)
@@ -29,9 +30,17 @@ def main():
     for action in plan:
         print('\t', action)
 
-    fail_node = ('a_drop_garlic_closed_coffin', 'gm2', 'c1', 'l3')
-    new_task_list = post_failure_tasks(graph, fail_node)
-    print("If failure occurs at: ", fail_node)
+    fail_action = ('a_drop_garlic_closed_coffin', 'gm2', 'c1', 'l3')
+    # print( planner.sol_tree.nodes(data=True))
+    for k, v in planner.sol_tree.nodes(data=True):
+        # print( k )
+        # print( v )
+        # print( v["info"])
+        if v[ "info" ] == fail_action:
+            fail_node_id = k
+            break
+    new_task_list = planner.replan(planner.sol_tree, fail_node_id, verbose=3)
+    print("If failure occurs at: ", fail_node_id)
     print("New task list will be: ", new_task_list)
 
 
