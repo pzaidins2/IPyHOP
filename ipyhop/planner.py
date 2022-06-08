@@ -165,7 +165,7 @@ class IPyHOP(object):
             while curr_node['available_methods'] != set():
                 method = next(iter(curr_node['available_methods']))
                 curr_node['selected_method'] = method
-                curr_node['available_methods'] -= {method}
+                curr_node['available_methods'].remove(method)
                 subtasks = method(self.state, *curr_node_info[1:])
                 if subtasks is not None:
                     curr_node['status'] = 'C'
@@ -218,7 +218,7 @@ class IPyHOP(object):
                 while curr_node['available_methods'] != set():
                     method = next(iter(curr_node['available_methods']))
                     curr_node['selected_method'] = method
-                    curr_node['available_methods'] -= {method}
+                    curr_node['available_methods'].remove(method)
                     subgoals = method(self.state, *curr_node_info[1:])
                     if subgoals is not None:
                         curr_node['status'] = 'C'
@@ -251,7 +251,7 @@ class IPyHOP(object):
                 while curr_node['available_methods'] != set():
                     method = next(iter(curr_node['available_methods']))
                     curr_node['selected_method'] = method
-                    curr_node['available_methods'] -= {method}
+                    curr_node['available_methods'].remove(method)
                     subgoals = method(self.state, curr_node_info)
                     if subgoals is not None:
                         curr_node['status'] = 'C'
@@ -347,8 +347,12 @@ class IPyHOP(object):
             # get new plan
             # plan is actions in left-right order, ignore previously executed commands unless
             # needed to complete immediate goal/task
-            plan = [ *filter( lambda x: x[ "type" ] == "A" and self.is_dependency_of( node_id, x ),
-                             dfs_preorder_nodes( self.sol_tree ) ) ]
+
+            # don't reexecute tree branches prior to current failure point parent
+            preorder_nodes = dfs_preorder_nodes( self.sol_tree )
+            parent_preorder_index = preorder_nodes.index( parent_id )
+            # we care only about actions that still need to be executed
+            plan = [ *filter( lambda x: x[ "type" ] == "A", preorder_nodes[ parent_preorder_index: ] ) ]
             # plan going forward is stored in PyHOP object
             self.sol_plan = plan
 
@@ -519,28 +523,14 @@ class IPyHOP(object):
     # ******************************        Class Method Declaration        ****************************************** #
     def is_dependency_of(self, node_1_id: int, node_2_id: int) -> bool:
         """
-                returns True if node_2 is any of: is node_1, right sibling of node_1, descendant of node_1
+                returns True if node_2 occurs after node_1 in preorder sort or is node_1
 
         """
-        # equality case
-        if node_1_id == node_2_id:
+        # get tree in preorder
+        preorder_nodes = dfs_preorder_nodes( 0 )
+        if preorder_nodes.index( node_1_id ) <= preorder_nodes.index( node_1_id ):
             return True
-        # node_1 is root special case
-        try:
-            parent_1_id = next( self.sol_tree.predecessors( node_1_id ) )
-        except StopIteration:
-            return True
-        # get parent descendants
-        parent_1_descendents = list( descendants( self.sol_tree,parent_1_id ) )
-        # node_2 is not descendant of node_1 parent
-        if node_2_id not in parent_1_descendents:
-            return False
-        # node_2 is right kin via parent_1 of node_1
-        if parent_1_descendents.index( node_1_id ) < parent_1_descendents.index( node_2_id ):
-            return True
-        # node_2 is left kin via parent_1 of node_1
-        else:
-            return False
+
 
 # ******************************************    Class Declaration End       ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #
