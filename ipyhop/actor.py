@@ -44,23 +44,36 @@ class Actor:
             print("Executing plan...\n")
         curr_state = initial_state
         # act on plan until completion or failure, replanning has needed
+        did_replan = False
+        found_plan = True
         while plan != []:
             # execute until success or failure
             exec_result = self.executor.execute( curr_state, plan )
-            plan = []
-            for state, action in exec_result:
+            # print(exec_result)
+            for i in range( 1, len( exec_result ) ):
+                print(exec_result[i])
+                action, state = exec_result[ i ]
+                plan.pop()
                 history.append( action )
+                # print( state )
+
                 # failure of action has occurred
                 if state == None:
                     if verbose >= 1:
                         print("Plan failed at: " + str(action))
-                    plan = self.planner.replan( state, action, verbose )
+                    plan = self.planner.replan( exec_result[ i - 1][ 1 ], i, verbose )
+                    did_replan = True
                     if verbose >= 1:
+                        if plan == []:
+                            print("NO VIABLE PLAN")
+                            break
                         print("New plan created\n")
                         if verbose >= 2:
                             print("New plan is:\n" + str(plan) + "\n")
                         print("Executing new plan...\n")
         if verbose >= 1:
+
+            print( "Replanning was used: " + str( did_replan ) )
             print( "History is:\n" + str(history) + "\n" )
         return history
 

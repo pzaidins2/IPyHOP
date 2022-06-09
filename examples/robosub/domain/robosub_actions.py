@@ -7,6 +7,8 @@ from ipyhop import Actions
 
 
 def a_search_for(state, l):
+    # print(type(state))
+    # print(state)
     state.found[l] = True
     return state
 

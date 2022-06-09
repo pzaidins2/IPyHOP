@@ -23,6 +23,7 @@ class MonteCarloExecutor(object):
         self.exec_list = [(None, state.copy())]
         state_copy = state.copy()
         for act_inst in plan:
+            # print(act_inst)
             act_name = act_inst[0]
             act_params = act_inst[1:]
             act_func = self.actions.action_dict[act_name]

@@ -29,19 +29,22 @@ def main():
     print('Plan: ')
     for action in plan:
         print('\t', action)
-    planar_plot(graph, root_node=0)
+    # planar_plot(graph, root_node=0)
     # fail_action = ('a_drop_garlic_closed_coffin', 'gm2', 'c1', 'l3')
-    fail_action = ('a_drop_garlic_closed_coffin', 'gm1', 'c1', 'l3')
+    # fail_action = ('a_drop_garlic_closed_coffin', 'gm1', 'c1', 'l3')
+    fail_action = ('a_stake_decapitated_dracula', 't1', 'd1', 'l4')
     # print( planner.sol_tree.nodes(data=True))
     for k, v in planner.sol_tree.nodes(data=True):
         # print( k )
         # print( v )
-        # print( v["info"])
         if v[ "info" ] == fail_action:
             fail_node_id = k
             fail_node = v
             break
-    new_task_list = planner.replan(planner.sol_tree, fail_node_id, verbose=3)
+    parent_node_id = next(graph.predecessors(fail_node_id))
+    parent_node = graph.nodes[parent_node_id]
+    new_task_list = planner.replan(parent_node["state"], fail_node_id, verbose=3)
+    new_task_list = [ graph.nodes[ new_task ][ "info" ] for new_task in new_task_list ]
     print("If failure occurs at: " + str(fail_node_id))
     print("New task list will be: " + str(new_task_list))
     planar_plot(graph, root_node=0)
