@@ -41,11 +41,12 @@ def main():
             fail_node_id = k
             fail_node = v
             break
+    fail_node_pos = plan.index( fail_action )
     parent_node_id = next(graph.predecessors(fail_node_id))
     parent_node = graph.nodes[parent_node_id]
-    new_task_list = planner.replan(parent_node["state"], fail_node_id, verbose=3)
-    new_task_list = [ graph.nodes[ new_task ][ "info" ] for new_task in new_task_list ]
-    print("If failure occurs at: " + str(fail_node_id))
+    new_task_list = planner.replan(parent_node["state"], fail_node_pos, verbose=3)
+    # new_task_list = [ graph.nodes[ new_task ][ "info" ] for new_task in new_task_list ]
+    print("If failure occurs at: " + str(fail_action))
     print("New task list will be: " + str(new_task_list))
     planar_plot(graph, root_node=0)
 

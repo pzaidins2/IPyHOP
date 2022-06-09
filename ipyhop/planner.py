@@ -300,9 +300,9 @@ class IPyHOP(object):
         sol_tree = self.sol_tree
         # get node id of action
         dfs_node_ids = [*dfs_preorder_nodes( sol_tree )]
-        print(dfs_node_ids)
+        # print(dfs_node_ids)
         dfs_action_node_ids = [ *filter( lambda x: sol_tree.nodes[ x ][ "type" ] == "A", dfs_node_ids ) ]
-        print(dfs_action_node_ids)
+        # print(dfs_action_node_ids)
         fail_node_id = dfs_action_node_ids[ action_position ]
         # fail node should always be action so move up to parent node before start
 
