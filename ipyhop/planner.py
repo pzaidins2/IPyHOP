@@ -311,13 +311,16 @@ class IPyHOP(object):
         node_id = node_id_stack[ 0 ]
         plan = []
         exec_preorder_index = action_position
+        exec_plan_index = exec_preorder_index
         # problem state and node are stored in stacks
         # if node cannot be repaired try reparing parent
         # once repair complete simulate until problem or success
         # if problem place on stack and repeat repair process
         # if at any point in repair process the previous node on the stack is descendant of current problem,
         # pop from stack and continue repair procedure from previous node
+        print(exec_plan_index )
         while node_id_stack != []:
+
             if verbose >= 3:
                 print("Loop Head, Node Stack is: " + str(node_id_stack ))
             # get top of stack
@@ -367,10 +370,16 @@ class IPyHOP(object):
 
             # don't reexecute tree branches prior to current failure point parent
             preorder_nodes = [*dfs_preorder_nodes( sol_tree )]
-            # print(preorder_nodes)
             exec_preorder_index = preorder_nodes.index( exec_id )
             # we care only about actions that still need to be executed
-            plan = [ *filter( lambda x: sol_tree.nodes[ x ][ "type" ] == "A", preorder_nodes ) ]
+            plan = [*filter(lambda x: sol_tree.nodes[x]["type"] == "A", preorder_nodes)]
+            plan_node_indices = [ *map( lambda x: preorder_nodes.index( x ), plan ) ]
+            for i in range( len( plan_node_indices ) ):
+                if plan_node_indices[ i ] >= exec_preorder_index:
+                    exec_plan_index = i
+                    break
+            print(exec_plan_index)
+
             # plan going forward is stored in PyHOP object
 
             # simulate new plan from current point
@@ -388,7 +397,7 @@ class IPyHOP(object):
             break
         plan = [ sol_tree.nodes[ x ][ "info" ] for x in plan ]
         self.sol_plan = plan
-        return plan, exec_preorder_index
+        return plan, exec_plan_index
         # return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #

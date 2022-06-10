@@ -46,41 +46,53 @@ class Actor:
         # act on plan until completion or failure, replanning has needed
         did_replan = False
         plan_impossible = False
+        plan_success = False
         exec_index = 0
-        while not plan_impossible:
+        while not ( plan_impossible or plan_success ):
+            # print(exec_index)
+            # print(plan)
             # execute until success or failure
-            print(plan[ exec_index: ])
+            # print(plan[ exec_index: ])
             exec_result = self.executor.execute( curr_state, plan[ exec_index: ] )
             # print(exec_result)
-            if not any( map( lambda x: x[1], exec_result) ):
+            # unzip list of tuples into seperate lists
+            action_list, state_list = [ *zip( *exec_result ) ]
+            # if no state is None plan executed successfully
+            if state_list[ -1 ] != None:
+                plan_success = True
+                history += [ *action_list[ 1: ] ]
+                if verbose >= 1:
+                    print("Plan executed successfully")
                 break
-            for i in range( 1, len( exec_result ) ):
-                action, state = exec_result[ i ]
-                history.append( action )
-                # print( state )
-                # failure of action has occurred
-                if state == None:
+            else:
+                # where failure occurred in most recent execution
+                # print(plan)
+                # print(action_list)
+                action_index = len( state_list ) - 1
+                # print(action_index)
+                history += [ *action_list[ 1: ] ]
+                if verbose >= 2:
+                    print("Plan failed at: " + str(action_list[action_index]))
+                # update location relative to whole plan
+                exec_index += action_index - 1
+                # sanity check
+                # print(plan[exec_index])
+                # print(action_list[action_index])
+                assert plan[ exec_index ] == action_list[ action_index ]
+                # replan
+                plan, exec_index = self.planner.replan( state_list[ -2 ], exec_index, verbose )
+                if plan == []:
+                    plan_impossible = True
                     if verbose >= 1:
-                        print("Plan failed at: " + str(action))
-                    plan, exec_index = self.planner.replan( exec_result[ i - 1][ 1 ], exec_index + i, verbose )
-                    print( exec_index )
-                    print( plan[exec_index:])
-                    did_replan = True
-                    if verbose >= 1:
-                        print("New plan created\n")
-                        if verbose >= 2:
-                            print("New plan is:\n" + str(plan) + "\n")
-                        print("Executing new plan...\n")
-                    if plan == []:
-                        plan_impossible = True
-                        if verbose >= 1:
-                            print( "No plan is possible...")
+                        print( "No plan is possible...")
                     break
-        if verbose >= 1:
+        if verbose >= 2 and plan_success:
+            print("History:")
+            for act in history:
+                print(act)
 
-            print( "Replanning was used: " + str( did_replan ) )
-            print( "History is:\n" + str(history) + "\n" )
         return history
+
 
 
 # ******************************************    Class Declaration End       ****************************************** #
