@@ -24,6 +24,9 @@ def a_pickup(state, b):
         state.holding['hand'] = b
         return state
 
+a_50_pickup = a_pickup
+a_0_pickup = a_pickup
+
 
 def a_unstack(state, b, c):
     if state.pos[b] == c and c != 'table' and state.clear[b] == True and state.holding['hand'] == False:
@@ -33,6 +36,8 @@ def a_unstack(state, b, c):
         state.clear[c] = True
         return state
 
+a_50_unstack = a_unstack
+a_0_unstack = a_unstack
 
 def a_putdown(state, b):
     if state.pos[b] == 'hand':
@@ -41,6 +46,8 @@ def a_putdown(state, b):
         state.holding['hand'] = False
         return state
 
+a_50_putdown = a_putdown
+a_0_putdown = a_putdown
 
 def a_stack(state, b, c):
     if state.pos[b] == 'hand' and state.clear[c] == True:
@@ -50,10 +57,58 @@ def a_stack(state, b, c):
         state.clear[c] = False
         return state
 
+a_50_stack = a_stack
+a_0_stack = a_stack
 
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.
 actions = Actions()
-actions.declare_actions([a_pickup, a_unstack, a_putdown, a_stack])
+actions.declare_actions(
+    reversed( [
+        a_pickup,
+        a_50_pickup,
+        a_0_pickup,
+        a_unstack,
+        a_50_unstack,
+        a_0_unstack,
+        a_putdown,
+        a_50_putdown,
+        a_0_putdown,
+        a_stack,
+        a_50_stack,
+        a_0_stack,
+    ]) )
+
+action_probability = {
+    "a_pickup":[1,0],
+    "a_50_pickup":[0.5,0.5],
+    "a_0_pickup":[0,1],
+    "a_unstack": [1, 0],
+    "a_50_unstack": [0.5, 0.5],
+    "a_0_unstack": [0, 1],
+    "a_putdown": [1, 0],
+    "a_50_putdown": [0.5, 0.5],
+    "a_0_putdown": [0, 1],
+    "a_stack": [1, 0],
+    "a_50_stack": [0.5, 0.5],
+    "a_0_stack": [0, 1],
+}
+
+action_cost = {
+    "a_pickup":1,
+    "a_50_pickup":1,
+    "a_0_pickup":1,
+    "a_unstack": 1,
+    "a_50_unstack": 1,
+    "a_0_unstack": 1,
+    "a_putdown": 1,
+    "a_50_putdown": 1,
+    "a_0_putdown": 1,
+    "a_stack": 1,
+    "a_50_stack": 1,
+    "a_0_stack": 1,
+}
+
+actions.declare_action_models(action_probability, action_cost)
 
 # ******************************************    Demo / Test Routine         ****************************************** #
 if __name__ == '__main__':

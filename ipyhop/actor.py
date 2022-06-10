@@ -45,32 +45,37 @@ class Actor:
         curr_state = initial_state
         # act on plan until completion or failure, replanning has needed
         did_replan = False
-        found_plan = True
-        while plan != []:
+        plan_impossible = False
+        exec_index = 0
+        while not plan_impossible:
             # execute until success or failure
-            exec_result = self.executor.execute( curr_state, plan )
+            print(plan[ exec_index: ])
+            exec_result = self.executor.execute( curr_state, plan[ exec_index: ] )
             # print(exec_result)
+            if not any( map( lambda x: x[1], exec_result) ):
+                break
             for i in range( 1, len( exec_result ) ):
-                print(exec_result[i])
                 action, state = exec_result[ i ]
-                plan.pop()
                 history.append( action )
                 # print( state )
-
                 # failure of action has occurred
                 if state == None:
                     if verbose >= 1:
                         print("Plan failed at: " + str(action))
-                    plan = self.planner.replan( exec_result[ i - 1][ 1 ], i, verbose )
+                    plan, exec_index = self.planner.replan( exec_result[ i - 1][ 1 ], exec_index + i, verbose )
+                    print( exec_index )
+                    print( plan[exec_index:])
                     did_replan = True
                     if verbose >= 1:
-                        if plan == []:
-                            print("NO VIABLE PLAN")
-                            break
                         print("New plan created\n")
                         if verbose >= 2:
                             print("New plan is:\n" + str(plan) + "\n")
                         print("Executing new plan...\n")
+                    if plan == []:
+                        plan_impossible = True
+                        if verbose >= 1:
+                            print( "No plan is possible...")
+                    break
         if verbose >= 1:
 
             print( "Replanning was used: " + str( did_replan ) )

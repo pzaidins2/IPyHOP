@@ -310,6 +310,7 @@ class IPyHOP(object):
         state_stack = [ state.copy() ]
         node_id = node_id_stack[ 0 ]
         plan = []
+        exec_preorder_index = action_position
         # problem state and node are stored in stacks
         # if node cannot be repaired try reparing parent
         # once repair complete simulate until problem or success
@@ -366,10 +367,10 @@ class IPyHOP(object):
 
             # don't reexecute tree branches prior to current failure point parent
             preorder_nodes = [*dfs_preorder_nodes( sol_tree )]
-            print(preorder_nodes)
+            # print(preorder_nodes)
             exec_preorder_index = preorder_nodes.index( exec_id )
             # we care only about actions that still need to be executed
-            plan = [ *filter( lambda x: sol_tree.nodes[ x ][ "type" ] == "A", preorder_nodes[ exec_preorder_index: ] ) ]
+            plan = [ *filter( lambda x: sol_tree.nodes[ x ][ "type" ] == "A", preorder_nodes ) ]
             # plan going forward is stored in PyHOP object
 
             # simulate new plan from current point
@@ -387,7 +388,7 @@ class IPyHOP(object):
             break
         plan = [ sol_tree.nodes[ x ][ "info" ] for x in plan ]
         self.sol_plan = plan
-        return plan
+        return plan, exec_preorder_index
         # return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
@@ -559,6 +560,6 @@ if __name__ == '__main__':
     raise NotImplementedError("Test run / Demo routine for IPyHOP isn't implemented.")
 
 """
-Author(s): Yash Bansod
-Repository: https://github.com/YashBansod/IPyHOP
+Author(s): Yash Bansod and Paul Zaidins
+Repository: https://github.com/pzaidins2/IPyHOP
 """
