@@ -4,10 +4,9 @@ File Description: Blocks World example file. Run this file to solve the Blocks W
 """
 
 # ******************************************    Libraries to be imported    ****************************************** #
-from examples.blocks_world.task_based.blocks_world_actions import actions
-from examples.blocks_world.task_based.blocks_world_methods_1 import methods
-from examples.blocks_world.task_based.blocks_world_methods_2 import methods as methods_2
-from examples.blocks_world.task_based.blocks_world_problem import init_state_1, goal1a, goal1b, init_state_2, goal2a, goal2b, \
+from examples.prob_blocks_world.blocks_world_actions import actions
+from examples.prob_blocks_world.blocks_world_methods import methods
+from examples.prob_blocks_world.blocks_world_problem import init_state_1, goal1a, goal1b, init_state_2, goal2a, goal2b, \
     init_state_3, goal3
 from ipyhop import IPyHOP
 
@@ -47,7 +46,12 @@ def main():
     print('Plan: ', plan, '\n')
 
     plan = planner.plan(init_state_1, [('move_one', 'a', 'table')], verbose=3)
-    assert plan == [('a_unstack', 'a', 'b'), ('a_putdown', 'a')], "Result plan and expected plan are not same"
+    val_plans = []
+    for str_mod_0 in [ "", "50_", "0_" ]:
+        for str_mod_1 in ["", "50_", "0_"]:
+            pos_plan = [('a_{}unstack'.format(str_mod_0), 'a', 'b'), ('a_{}putdown'.format(str_mod_1), 'a')]
+            val_plans.append(pos_plan)
+    assert plan in val_plans, "Result plan is in set of expected plans"
 
     print("""\r************************************************************************************************
         \rRun IPyHOP on two block-stacking problems, both of which start in init_state_1. 
@@ -58,13 +62,27 @@ def main():
     print('\ngoal1a: \n', goal1a)
     print('\ngoal1b: \n', goal1b, '\n')
 
-    exp_1 = [('a_unstack', 'a', 'b'), ('a_putdown', 'a'), ('a_pickup', 'b'), ('a_stack', 'b', 'a'),
-                ('a_pickup', 'c'), ('a_stack', 'c', 'b')]
+    # exp_1 = [('a_unstack', 'a', 'b'), ('a_putdown', 'a'), ('a_pickup', 'b'), ('a_stack', 'b', 'a'),
+    #             ('a_pickup', 'c'), ('a_stack', 'c', 'b')]
+    val_plans = []
+    for str_mod_0 in ["", "50_", "0_"]:
+        for str_mod_1 in ["", "50_", "0_"]:
+            for str_mod_2 in ["", "50_", "0_"]:
+                for str_mod_3 in ["", "50_", "0_"]:
+                    for str_mod_4 in ["", "50_", "0_"]:
+                        for str_mod_5 in ["", "50_", "0_"]:
+                            pos_plan = [('a_{}unstack'.format(str_mod_0), 'a', 'b'),
+                                        ('a_{}putdown'.format(str_mod_1), 'a'),
+                                        ('a_{}pickup'.format(str_mod_2), 'b'),
+                                        ('a_{}stack'.format(str_mod_3), 'b', 'a'),
+                                        ('a_{}pickup'.format(str_mod_4), 'c'),
+                                        ('a_{}stack'.format(str_mod_5), 'c', 'b')]
+                            val_plans.append(pos_plan)
     plan = planner.plan(init_state_1, [('move_blocks', goal1a)], verbose=3)
-    assert plan == exp_1, "Result plan and expected plan are not same"
+    assert plan in val_plans, "Result plan and expected plan are not same"
     print('Plan: ', plan, '\n')
     plan = planner.plan(init_state_1, [('move_blocks', goal1b)], verbose=3)
-    assert plan == exp_1, "Result plan and expected plan are not same"
+    assert plan in val_plans, "Result plan and expected plan are not same"
     print('Plan: ', plan, '\n')
 
     print("""\r*******************************************************************************
@@ -78,11 +96,25 @@ def main():
 
     exp_2 = [('a_unstack', 'a', 'c'), ('a_putdown', 'a'), ('a_unstack', 'b', 'd'), ('a_stack', 'b', 'c'),
              ('a_pickup', 'a'), ('a_stack', 'a', 'd')]
+    val_plans = []
+    for str_mod_0 in ["", "50_", "0_"]:
+        for str_mod_1 in ["", "50_", "0_"]:
+            for str_mod_2 in ["", "50_", "0_"]:
+                for str_mod_3 in ["", "50_", "0_"]:
+                    for str_mod_4 in ["", "50_", "0_"]:
+                        for str_mod_5 in ["", "50_", "0_"]:
+                            pos_plan = [('a_{}unstack'.format(str_mod_0), 'a', 'c'),
+                                        ('a_{}putdown'.format(str_mod_1), 'a'),
+                                        ('a_{}unstack'.format(str_mod_2), 'b', 'd'),
+                                        ('a_{}stack'.format(str_mod_3), 'b', 'c'),
+                                        ('a_{}pickup'.format(str_mod_4), 'a'),
+                                        ('a_{}stack'.format(str_mod_5), 'a', 'd')]
+                            val_plans.append(pos_plan)
     plan = planner.plan(init_state_2, [('move_blocks', goal2a)], verbose=3)
-    assert plan == exp_2, "Result plan and expected plan are not same"
+    assert plan in val_plans, "Result plan and expected plan are not same"
     print('Plan: ', plan, '\n')
     plan = planner.plan(init_state_2, [('move_blocks', goal2b)], verbose=3)
-    assert plan == exp_2, "Result plan and expected plan are not same"
+    assert plan in val_plans, "Result plan and expected plan are not same"
     print('Plan: ', plan, '\n')
 
     print("""\r**********************************************************************
@@ -100,9 +132,22 @@ def main():
              ('a_putdown', 14), ('a_unstack', 16, 3), ('a_stack', 16, 11), ('a_unstack', 3, 2), ('a_stack', 3, 16),
              ('a_pickup', 2), ('a_stack', 2, 3), ('a_unstack', 12, 13), ('a_stack', 12, 2), ('a_pickup', 13),
              ('a_stack', 13, 8), ('a_pickup', 15), ('a_stack', 15, 13)]
-
+    val_plans = []
+    str_mods = ["", "50_", "0_"]
     plan = planner.plan(init_state_3, [('move_blocks', goal3)], verbose=3)
-    assert plan == exp_3, "Result plan and expected plan are not same"
+    def plan_check( base_list, act_list, str_mods ):
+        if len( act_list ) != len( base_list ):
+            return False
+        for i in range( len( base_list ) ):
+            base_act = base_list[ i ]
+            base_str = base_act[ 0 ]
+            act = act_list[ i ]
+            val_strs = map( lambda x: base_str[0:2] + x + base_str[2:], str_mods )
+            val_acts = map( lambda x: (x, *base_act[1:]), val_strs )
+            if act not in val_acts:
+                return False
+        return True
+    assert plan_check(exp_3,plan,str_mods), "Result plan and expected plan are not same"
     print('Plan: ', plan, '\n')
 
     print("""\r*****************************************************************************
@@ -110,24 +155,24 @@ def main():
     \r'get' is replaced with two methods that will sometimes cause backtracking.
     \r*****************************************************************************\n""")
 
-    print('\n', methods_2)
-    planner_2 = IPyHOP(methods_2, actions)
-
-    print("""\n=== In the next call to IPyHOP, it should backtrack===\n""")
-    # verbose=2 tells IPyHOP to print out a message at each iteration
-    plan = planner_2.plan(init_state_1, [('get', 'a')], verbose=2)
-    assert plan == [('a_unstack', 'a', 'b')], "Result plan and expected plan are not same"
-    print('Plan: ', plan, '\n')
-
-    print("""\n=== This time it shouldn't backtrack.===\n""")
-    plan = planner_2.plan(init_state_1, [('get', 'c')], verbose=2)
-    assert plan == [('a_pickup', 'c')], "Result plan and expected plan are not same"
-    print('Plan: ', plan, '\n')
-
-    print("""\n=== This time it should fail.===\n""")
-    plan = planner_2.plan(init_state_1, [('get', 'b')], verbose=2)
-    assert plan == [], "Result plan and expected plan are not same"
-    print('Plan: ', plan, '\n')
+    # print('\n', methods_2)
+    # planner_2 = IPyHOP(methods_2, actions)
+    #
+    # print("""\n=== In the next call to IPyHOP, it should backtrack===\n""")
+    # # verbose=2 tells IPyHOP to print out a message at each iteration
+    # plan = planner_2.plan(init_state_1, [('get', 'a')], verbose=2)
+    # assert plan == [('a_unstack', 'a', 'b')], "Result plan and expected plan are not same"
+    # print('Plan: ', plan, '\n')
+    #
+    # print("""\n=== This time it shouldn't backtrack.===\n""")
+    # plan = planner_2.plan(init_state_1, [('get', 'c')], verbose=2)
+    # assert plan == [('a_pickup', 'c')], "Result plan and expected plan are not same"
+    # print('Plan: ', plan, '\n')
+    #
+    # print("""\n=== This time it should fail.===\n""")
+    # plan = planner_2.plan(init_state_1, [('get', 'b')], verbose=2)
+    # assert plan == [], "Result plan and expected plan are not same"
+    # print('Plan: ', plan, '\n')
 
 
 # ******************************************        Main Program End        ****************************************** #

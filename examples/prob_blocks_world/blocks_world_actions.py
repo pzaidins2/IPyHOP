@@ -24,8 +24,10 @@ def a_pickup(state, b):
         state.holding['hand'] = b
         return state
 
-a_50_pickup = a_pickup
-a_0_pickup = a_pickup
+def a_50_pickup( state, b ):
+    return a_pickup( state, b )
+def a_0_pickup( state, b ):
+    return a_pickup( state, b )
 
 
 def a_unstack(state, b, c):
@@ -36,8 +38,10 @@ def a_unstack(state, b, c):
         state.clear[c] = True
         return state
 
-a_50_unstack = a_unstack
-a_0_unstack = a_unstack
+def a_50_unstack(state, b, c):
+    return a_unstack(state, b, c)
+def a_0_unstack(state, b, c):
+    return a_unstack(state, b, c)
 
 def a_putdown(state, b):
     if state.pos[b] == 'hand':
@@ -46,8 +50,10 @@ def a_putdown(state, b):
         state.holding['hand'] = False
         return state
 
-a_50_putdown = a_putdown
-a_0_putdown = a_putdown
+def a_50_putdown( state, b ):
+    return a_putdown( state, b )
+def a_0_putdown( state, b ):
+    return a_putdown( state, b )
 
 def a_stack(state, b, c):
     if state.pos[b] == 'hand' and state.clear[c] == True:
@@ -57,13 +63,15 @@ def a_stack(state, b, c):
         state.clear[c] = False
         return state
 
-a_50_stack = a_stack
-a_0_stack = a_stack
+def a_50_stack(state, b, c):
+    return a_stack(state, b, c)
+def a_0_stack(state, b, c):
+    return a_stack(state, b, c)
 
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.
 actions = Actions()
 actions.declare_actions(
-    reversed( [
+    [*reversed( [
         a_pickup,
         a_50_pickup,
         a_0_pickup,
@@ -76,7 +84,7 @@ actions.declare_actions(
         a_stack,
         a_50_stack,
         a_0_stack,
-    ]) )
+    ]) ] )
 
 action_probability = {
     "a_pickup":[1,0],
@@ -107,7 +115,9 @@ action_cost = {
     "a_50_stack": 1,
     "a_0_stack": 1,
 }
-
+print(len(actions.action_dict.keys()))
+print(len(action_probability.keys()))
+print(len(action_cost.keys()))
 actions.declare_action_models(action_probability, action_cost)
 
 # ******************************************    Demo / Test Routine         ****************************************** #

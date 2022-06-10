@@ -103,8 +103,28 @@ def tm_get(state, b1):
         else:
             return [('a_unstack', b1, state.pos[b1])]
 
+def tm_50_get(state, b1):
+    """
+    Generate either a pickup or an unstack subtask for b1.
+    """
+    if state.clear[b1]:
+        if state.pos[b1] == 'table':
+            return [('a_50_pickup', b1)]
+        else:
+            return [('a_50_unstack', b1, state.pos[b1])]
 
-methods.declare_task_methods('get', [tm_get])
+def tm_0_get(state, b1):
+    """
+    Generate either a pickup or an unstack subtask for b1.
+    """
+    if state.clear[b1]:
+        if state.pos[b1] == 'table':
+            return [('a_0_pickup', b1)]
+        else:
+            return [('a_0_unstack', b1, state.pos[b1])]
+
+
+methods.declare_task_methods('get', [tm_0_get,tm_50_get,tm_get])
 
 
 def tm_put(state, b1, b2):
@@ -117,8 +137,27 @@ def tm_put(state, b1, b2):
         else:
             return [('a_stack', b1, b2)]
 
+def tm_50_put(state, b1, b2):
+    """
+    Generate either a putdown or a stack subtask for b1. b2 is b1's destination: either the table or another block.
+    """
+    if state.holding['hand'] == b1:
+        if b2 == 'table':
+            return [('a_50_putdown', b1)]
+        else:
+            return [('a_50_stack', b1, b2)]
 
-methods.declare_task_methods('put', [tm_put])
+def tm_0_put(state, b1, b2):
+    """
+    Generate either a putdown or a stack subtask for b1. b2 is b1's destination: either the table or another block.
+    """
+    if state.holding['hand'] == b1:
+        if b2 == 'table':
+            return [('a_0_putdown', b1)]
+        else:
+            return [('a_0_stack', b1, b2)]
+
+methods.declare_task_methods('put', [tm_0_put,tm_50_put,tm_put])
 
 # ******************************************    Demo / Test Routine         ****************************************** #
 if __name__ == '__main__':
