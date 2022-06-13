@@ -106,10 +106,11 @@ class IPyHOP(object):
         return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def _planning(self, sub_graph_root_node_id, verbose: Optional[int]=0):
+    def _planning(self, sub_graph_root_node_id: int, verbose: Optional[int]=0):
 
         _iter = 0
         parent_node_id = sub_graph_root_node_id
+        prev_node_id = sub_graph_root_node_id
         for _iter in count(0):
             curr_node_id = None
             # Get the first Open node from the immediate successors of parent node. (using BFS)
@@ -123,6 +124,7 @@ class IPyHOP(object):
             # If Open node wasn't found from the immediate successors
             if curr_node_id is None:
                 # stop iterations at sub graph root
+                # print(parent_node_id ==sub_graph_root_node_id)
                 if parent_node_id == sub_graph_root_node_id:
                     break
                 # Set the parent_node_id as predecessor of parent_node_id if available.
@@ -139,9 +141,17 @@ class IPyHOP(object):
                         _iter, repr([self.sol_tree.nodes[x]['info'] for x in self.sol_tree.successors(parent_node_id)])))
             # Else, it means that an Open node was found in the subgraph. Refine the node.
             else:
+                prev_node_id = curr_node_id
                 curr_node_id, parent_node_id = self._node_refine( curr_node_id, parent_node_id, _iter )
         # return iteration count and reachable most bottom-left node
-        return _iter, (curr_node_id if curr_node_id != None else next( dfs_preorder_nodes(self.sol_tree,source=parent_node_id) ))
+        # print("THIS")
+        # print(curr_node_id)
+        # print(parent_node_id)
+        # print(self.sol_tree.nodes[parent_node_id]["info"])
+        # print( self.sol_tree.nodes[ next( dfs_preorder_nodes(self.sol_tree,source=parent_node_id) ) ][ "info"])
+        # print( [ (x,self.sol_tree.nodes[x]["info"]) for x in self.sol_tree.successors(parent_node_id) ] )
+        # print("THIS END")
+        return _iter, prev_node_id
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _node_refine(self, curr_node_id: int, parent_node_id: int, _iter: int ):
@@ -163,10 +173,14 @@ class IPyHOP(object):
             # If methods are available for refining the task, use them.
             # print( curr_node['available_methods'])
             while curr_node['available_methods'] != set():
+                print(curr_node["available_methods"])
                 method = next(iter(curr_node['available_methods']))
                 curr_node['selected_method'] = method
                 curr_node['available_methods'].remove(method)
                 subtasks = method(self.state, *curr_node_info[1:])
+                # print("SUBTASKS")
+                # print(subtasks)
+                # print("SUBTASKS END")
                 if subtasks is not None:
                     curr_node['status'] = 'C'
                     _id = self._add_nodes_and_edges(curr_node_id, subtasks)
@@ -378,7 +392,7 @@ class IPyHOP(object):
                 if plan_node_indices[ i ] >= exec_preorder_index:
                     exec_plan_index = i
                     break
-            print(exec_plan_index)
+            # print(exec_plan_index)
 
             # plan going forward is stored in PyHOP object
 

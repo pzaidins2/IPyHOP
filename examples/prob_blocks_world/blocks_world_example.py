@@ -9,6 +9,9 @@ from examples.prob_blocks_world.blocks_world_methods import methods
 from examples.prob_blocks_world.blocks_world_problem import init_state_1, goal1a, goal1b, init_state_2, goal2a, goal2b, \
     init_state_3, goal3
 from ipyhop import IPyHOP
+from ipyhop.mc_executor import MonteCarloExecutor
+from ipyhop.actor import Actor
+from io import StringIO
 
 
 # ******************************************        Main Program Start      ****************************************** #
@@ -151,28 +154,11 @@ def main():
     print('Plan: ', plan, '\n')
 
     print("""\r*****************************************************************************
-    \rLoad a modified version of the blocks_world methods, in which the method for 
-    \r'get' is replaced with two methods that will sometimes cause backtracking.
+    \rTest acting on probabilistic blocks world
     \r*****************************************************************************\n""")
-
-    # print('\n', methods_2)
-    # planner_2 = IPyHOP(methods_2, actions)
-    #
-    # print("""\n=== In the next call to IPyHOP, it should backtrack===\n""")
-    # # verbose=2 tells IPyHOP to print out a message at each iteration
-    # plan = planner_2.plan(init_state_1, [('get', 'a')], verbose=2)
-    # assert plan == [('a_unstack', 'a', 'b')], "Result plan and expected plan are not same"
-    # print('Plan: ', plan, '\n')
-    #
-    # print("""\n=== This time it shouldn't backtrack.===\n""")
-    # plan = planner_2.plan(init_state_1, [('get', 'c')], verbose=2)
-    # assert plan == [('a_pickup', 'c')], "Result plan and expected plan are not same"
-    # print('Plan: ', plan, '\n')
-    #
-    # print("""\n=== This time it should fail.===\n""")
-    # plan = planner_2.plan(init_state_1, [('get', 'b')], verbose=2)
-    # assert plan == [], "Result plan and expected plan are not same"
-    # print('Plan: ', plan, '\n')
+    mc_executor = MonteCarloExecutor(actions)
+    actor = Actor( planner, mc_executor )
+    history = actor.complete_to_do(init_state_3, [('move_blocks', goal3)], verbose=3)
 
 
 # ******************************************        Main Program End        ****************************************** #

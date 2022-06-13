@@ -57,6 +57,9 @@ class Actor:
             # print(exec_result)
             # unzip list of tuples into seperate lists
             action_list, state_list = [ *zip( *exec_result ) ]
+            # for i in range(len(exec_result)):
+            #     print(action_list[i])
+            #     print(state_list[i])
             # if no state is None plan executed successfully
             if state_list[ -1 ] != None:
                 plan_success = True
@@ -80,7 +83,10 @@ class Actor:
                 # print(action_list[action_index])
                 assert plan[ exec_index ] == action_list[ action_index ]
                 # replan
-                plan, exec_index = self.planner.replan( state_list[ -2 ], exec_index, verbose )
+                curr_state = state_list[ -2 ]
+                # print(curr_state)
+                # print(action_list[-1])
+                plan, exec_index = self.planner.replan( curr_state, exec_index, verbose )
                 if plan == []:
                     plan_impossible = True
                     if verbose >= 1:
