@@ -73,7 +73,7 @@ class Actor:
                 # print(action_list)
                 action_index = len( state_list ) - 1
                 # print(action_index)
-                history += [ *action_list[ 1: ] ]
+                history += action_list[ 1: ]
                 if verbose >= 2:
                     print("Plan failed at: " + str(action_list[action_index]))
                 # update location relative to whole plan
