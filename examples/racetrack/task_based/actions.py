@@ -18,31 +18,27 @@ The racetrack actions use three state variables:
 from ipyhop import Actions
 
 # all actions are usable on condition that there is no crash
-# change vx by dvx and vy by dvy
-def change_v( state, dvx, dvy ):
-    loc = state.loc
-    v = state.v
+# set velocity to new_v
+def set_v( state, loc, v, new_loc, new_v ):
     walls = state.walls
-    # location after one step
-    new_v = ( v[ 0 ] + dvx, v[ 1 ] + dvy )
-    new_loc = ( loc[ 0 ]  + new_v[ 0 ], loc[ 1 ] + new_v[ 1 ] )
-    move = ( loc, new_loc )
-    # if a crash would not occur, update state
-    if not crash( move, walls ):
-        state.v = new_v
-        state.loc = new_loc
-        return state
+    # can only adjust v by one step
+    if abs( v[ 0 ] - new_v[ 0 ] ) + abs( v[ 1 ] - new_v[ 1 ] ) <= 1:
+        # location after one step
+        move = ( loc, new_loc )
+        # if a crash would not occur, update state
+        if not crash( move, walls ):
+            return state
 
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.
 actions = Actions()
-actions.declare_actions( [ change_v ] )
+actions.declare_actions( [ set_v ] )
 
 action_probability = {
-    "change_v": [ 1, 0 ]
+    "set_v": [ 0.8, 0.2 ]
 }
 
 action_cost = {
-    "change_v": 1
+    "set_v": 1
 }
 
 actions.declare_action_models(action_probability, action_cost)

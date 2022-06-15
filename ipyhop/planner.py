@@ -172,7 +172,7 @@ class IPyHOP(object):
             subtasks = None
             # If methods are available for refining the task, use them.
             # print( curr_node['available_methods'])
-            while curr_node['available_methods'] != set():
+            while curr_node['available_methods'] != []:
                 print(curr_node["available_methods"])
                 method = next(iter(curr_node['available_methods']))
                 curr_node['selected_method'] = method
@@ -229,7 +229,7 @@ class IPyHOP(object):
                     print('Iteration {}, Goal {} already achieved'.format(_iter, repr(curr_node_info)))
             else:
                 # If methods are available for refining the goal, use them.
-                while curr_node['available_methods'] != set():
+                while curr_node['available_methods'] != []:
                     method = next(iter(curr_node['available_methods']))
                     curr_node['selected_method'] = method
                     curr_node['available_methods'].remove(method)
@@ -262,7 +262,7 @@ class IPyHOP(object):
                     print('Iteration {}, MultiGoal {} already achieved'.format(_iter, repr(curr_node_info)))
             else:
                 # If methods are available for refining the goal, use them.
-                while curr_node['available_methods'] != set():
+                while curr_node['available_methods'] != []:
                     method = next(iter(curr_node['available_methods']))
                     curr_node['selected_method'] = method
                     curr_node['available_methods'].remove(method)
@@ -359,7 +359,7 @@ class IPyHOP(object):
 
             # there exists relevant methods we have not tried
             # propagate expansion downward, backtracking if needed but never higher than current node
-            if node[ "available_methods" ] != set():
+            if node[ "available_methods" ] != []:
                 self.state = true_state
                 _iter, exec_id = self._planning(parent_id ,verbose=verbose)
                 self.iterations += _iter
@@ -422,13 +422,13 @@ class IPyHOP(object):
             if isinstance(child_node_info, MultiGoal):  # equivalent to type(child_node_info) == MultiGoal
                 relevant_methods = self.methods.multigoal_method_dict[child_node_info.goal_tag]
                 self.sol_tree.add_node(_id, info=child_node_info, type='M', status='O', state=None,
-                                       selected_method=None, available_methods=set(relevant_methods),
+                                       selected_method=None, available_methods=[*relevant_methods],
                                        methods=relevant_methods)
                 self.sol_tree.add_edge(parent_node_id, _id)
             elif child_node_info[0] in self.methods.task_method_dict:
                 relevant_methods = self.methods.task_method_dict[child_node_info[0]]
                 self.sol_tree.add_node(_id, info=child_node_info, type='T', status='O', state=None,
-                                       selected_method=None, available_methods=set(relevant_methods),
+                                       selected_method=None, available_methods=[*relevant_methods],
                                        methods=relevant_methods)
                 self.sol_tree.add_edge(parent_node_id, _id)
             elif child_node_info[0] in self.actions.action_dict:
@@ -438,7 +438,7 @@ class IPyHOP(object):
             elif child_node_info[0] in self.methods.goal_method_dict:
                 relevant_methods = self.methods.goal_method_dict[child_node_info[0]]
                 self.sol_tree.add_node(_id, info=child_node_info, type='G', status='O', state=None,
-                                       selected_method=None, available_methods=set(relevant_methods),
+                                       selected_method=None, available_methods=[*relevant_methods],
                                        methods=relevant_methods)
                 self.sol_tree.add_edge(parent_node_id, _id)
 
@@ -470,7 +470,7 @@ class IPyHOP(object):
             if c_type == 'T' or c_type == 'G' or c_type == 'M':
                 c_node['state'] = None
                 c_node['selected_method'] = None
-                c_node['available_methods'] = set(c_node['methods'])
+                c_node['available_methods'] = [*c_node['methods']]
                 descendant_list = list(descendants(self.sol_tree, node_id))
                 self.sol_tree.remove_nodes_from(descendant_list)
 
@@ -493,7 +493,7 @@ class IPyHOP(object):
         if c_type == 'T' or c_type == 'G' or c_type == 'M':
             c_node['state'] = None
             c_node['selected_method'] = None
-            c_node['available_methods'] = set(c_node['methods'])
+            c_node['available_methods'] = [*c_node['methods']]
 
         dfs_list = list(dfs_preorder_nodes(self.sol_tree, source=p_node_id))
         for node_id in reversed(dfs_list):
