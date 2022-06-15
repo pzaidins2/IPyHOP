@@ -22,23 +22,22 @@ from examples.racetrack.search.sample_heuristics import h_esdist
 # Create a IPyHOP Methods object. A Methods object stores all the methods defined for the planning domain.
 methods = Methods()
 
-def tm_go_from_to( state, loc, v, f_line ):
+def tm_finish_at(state, f_line):
     strategy = "gbf"
     h = h_esdist
+    loc = state.loc
+    v = state.v
     walls = [ *state.walls ]
     problem = [ loc, [*f_line], walls ]
     path_onwards = search( problem, strategy, h, v_0=v, draw=1)
-    print( "PATH IS")
-    print(path_onwards)
-    print("PATH END")
     # use first action in list until at f_line with v= (0,0)
     if goal_test( path_onwards[ 1 ], f_line ):
-        return [ ( "set_v", *path_onwards[ 0 ], *path_onwards[ 1 ]  ) ]
+        return [ ( "set_v", path_onwards[ 1 ][ 1 ]  ) ]
     else:
-        return [ ( "set_v", *path_onwards[ 0 ], *path_onwards[ 1 ]  ), ( "go_from_to", *path_onwards[ 1 ], f_line ) ]
+        return [ ( "set_v", path_onwards[ 1 ][ 1 ]  ), ( "finish_at", f_line ) ]
 
 
-methods.declare_task_methods( "go_from_to", [tm_go_from_to] )
+methods.declare_task_methods( "finish_at", [tm_finish_at])
 
 # # have v = (0,0) and loc = dest
 # def tm_finish_at( state, f_line ):

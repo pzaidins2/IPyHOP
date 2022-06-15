@@ -19,9 +19,11 @@ def prob_to_state_and_task( prob ):
     init_state = State( 'init_state' )
     init_state.walls = tuple( [ tuple( x ) for x in prob[ 2: ][ 0 ] ] )
     loc = prob[0]
+    init_state.loc = loc
     f_line = tuple( prob[ 1 ] )
     v = (0, 0)
-    task = ( "go_from_to", loc, v, f_line )
+    init_state.v = v
+    task = ( "finish_at", f_line )
     return init_state, [ task ]
 # ******************************************        Main Program Start      ****************************************** #
 def main():
