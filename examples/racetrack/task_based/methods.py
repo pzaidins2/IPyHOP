@@ -9,10 +9,13 @@ task that the method is for. For example, the task ('get', b1) has a method "tm_
 """
 from typing import List
 
+import numpy as np
+
 from ipyhop import Methods
 from examples.racetrack.search.racetrack import crash, intersect, goal_test
 from examples.racetrack.search.racetrack import main as search
 from examples.racetrack.search.sample_heuristics import h_esdist
+import numpy
 
 
 # ******************************************        Helper Functions        ****************************************** #
@@ -38,6 +41,104 @@ def tm_finish_at(state, f_line):
 
 
 methods.declare_task_methods( "finish_at", [tm_finish_at])
+
+# generate point grid
+def tm_generate_visibility_graph(state, f_line):
+    # get all points in problem
+    loc = state.loc
+    walls = state.walls
+    wall_points = set()
+    for line in walls:
+        wall_points.add( line[ 0 ] )
+        wall_points.add( line[ 1 ] )
+    points = { loc, *f_line, *wall_points }
+    point_array = np.ndarray( ( len( points ), 2 ) )
+    for i in range( len( points ) ):
+        point_array[ i, 0 ] = points[ i ][ 0 ]
+        point_array[ i, 1 ] = points[ i ][ 1 ]
+    # get bounding box
+    x_min, y_min = np.min( point_array, axis=0 )
+    x_max, y_max = np.max( point_array, axis=0 )
+    # generate visibility graph for all points in bounding box
+    vis_graph = dict()
+
+    start_pt = loc
+    unexpanded_pts = [ start_pt ]
+    visited_pts = set()
+    # continue expansion until all nodes reachable by start
+    while unexpanded_pts != []:
+        curr_pt = unexpanded_pts.pop()
+        visited_pts.add( curr_pt )
+        vis_graph[ curr_pt ] = set()
+        # check each int point in bounding box for visibility
+        for i in range( x_min, x_max + 1 ):
+            for j in range( y_min, y_max + 1 ):
+                pt = ( i, j )
+                move = ( curr_pt, pt )
+                # visible if move would not cause crash
+                if not crash( move, walls ):
+                    vis_graph[ curr_pt ].add( pt )
+                    # add node to unexpanded if not previously encountered
+                    if pt not in visited_pts:
+                        unexpanded_pts.append( pt )
+    # iterate over points in visibility graph to get minimum distance to
+    # create dict of min distance to start point of finish line
+    dist_dict = dict()
+    # start with points directly reachable by finish line start
+    unexpanded_pts = [ f_line[ 0 ] ]
+    visited_pts = set()
+    # continue expansion until all nodes have min cost
+    while unexpanded_pts != []:
+        curr_pt = unexpanded_pts.pop()
+        visited_pts.add( curr_pt )
+        # get visible points
+        vis_points = vis_graph[ curr_pt ]
+        # get distance to visible points
+        dist_to = { pt: np.sqrt( np.power( pt[ 0 ] - curr_pt[ 0 ], 2 ) + np.power( pt[ 1 ] - curr_pt[ 1 ], 2 ) )
+                      for pt in vis_points }
+        dist_from = dist_dict[ curr_pt ]
+        # update dist_dict for all visible points
+        for pt in vis_points:
+            dist = dist_to[ pt ] + dist_from
+            if pt in dist_dict.keys():
+                dist_dict[ pt ] = min( dist_dict[ pt ], dist )
+            else:
+                dist_dict[ pt ] = dist
+                unexpanded_pts.append( pt )
+    state.vis_graph = vis_graph
+    state.dist_dict = dist_dict
+
+def tm_hill_climb( state ):
+    loc = state.loc
+    v = state.v
+    vis_graph = state.vis_graph
+    dist_dict = state.dist_dict
+    # visible points
+    vis_points = vis_graph[ loc ]
+    pos_next_attitude = dict()
+    # points that can be achieved given current v, loc and visibility
+    for dv_x in [ -1, 0, 1 ]:
+        for dv_y in [ -1, 0, 1 ]:
+            new_v = ( v[ 0 ] + dv_x, v[ 1 ] + dv_y )
+            new_loc = ( loc[ 0 ] + new_v[ 0 ], loc[ 1 ] + new_v[ 1 ] )
+            if new_loc in vis_points:
+                pos_next_attitude[ new_loc: new_v ]
+    # get minimal distance
+    dist = np.inf
+    for point, velocity in pos_next_attitude.items():
+        if dist_dict[ point ] < dist:
+            action = ( "set_v", velocity )
+    return [ action, ( "hill_climb" ) ]
+
+
+
+
+
+
+
+
+
+
 
 # # have v = (0,0) and loc = dest
 # def tm_finish_at( state, f_line ):
