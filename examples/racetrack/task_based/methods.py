@@ -26,18 +26,19 @@ import numpy
 methods = Methods()
 
 def tm_finish_at(state, f_line):
-    strategy = "gbf"
-    h = h_esdist
-    loc = state.loc
-    v = state.v
-    walls = [ *state.walls ]
-    problem = [ loc, [*f_line], walls ]
-    path_onwards = search( problem, strategy, h, v_0=v, draw=1)
-    # use first action in list until at f_line with v= (0,0)
-    if goal_test( path_onwards[ 1 ], f_line ):
-        return [ ( "set_v", path_onwards[ 1 ][ 1 ]  ) ]
-    else:
-        return [ ( "set_v", path_onwards[ 1 ][ 1 ]  ), ( "finish_at", f_line ) ]
+    return [ ( "generate_visibility_graph", f_line ), ( "hill_climb", f_line ) ]
+    # strategy = "gbf"
+    # h = h_esdist
+    # loc = state.loc
+    # v = state.v
+    # walls = [ *state.walls ]
+    # problem = [ loc, [*f_line], walls ]
+    # path_onwards = search( problem, strategy, h, v_0=v, draw=1)
+    # # use first action in list until at f_line with v= (0,0)
+    # if goal_test( path_onwards[ 1 ], f_line ):
+    #     return [ ( "set_v", path_onwards[ 1 ][ 1 ]  ) ]
+    # else:
+    #     return [ ( "set_v", path_onwards[ 1 ][ 1 ]  ), ( "finish_at", f_line ) ]
 
 
 methods.declare_task_methods( "finish_at", [tm_finish_at])
@@ -52,13 +53,11 @@ def tm_generate_visibility_graph(state, f_line):
         wall_points.add( line[ 0 ] )
         wall_points.add( line[ 1 ] )
     points = { loc, *f_line, *wall_points }
-    point_array = np.ndarray( ( len( points ), 2 ) )
-    for i in range( len( points ) ):
-        point_array[ i, 0 ] = points[ i ][ 0 ]
-        point_array[ i, 1 ] = points[ i ][ 1 ]
+    point_array = np.array( [ np.array( pt ) for pt in points ] )
     # get bounding box
     x_min, y_min = np.min( point_array, axis=0 )
     x_max, y_max = np.max( point_array, axis=0 )
+    print( ( x_max - x_min+1 ) * (y_max-y_min+1))
     # generate visibility graph for all points in bounding box
     vis_graph = dict()
 
@@ -67,25 +66,40 @@ def tm_generate_visibility_graph(state, f_line):
     visited_pts = set()
     # continue expansion until all nodes reachable by start
     while unexpanded_pts != []:
+        print(len(visited_pts))
         curr_pt = unexpanded_pts.pop()
         visited_pts.add( curr_pt )
         vis_graph[ curr_pt ] = set()
+        rng = np.random.default_rng()
+        N = 1
         # check each int point in bounding box for visibility
-        for i in range( x_min, x_max + 1 ):
-            for j in range( y_min, y_max + 1 ):
+        for i in range( x_min, x_max ): #( rng.choice( x_max-x_min, size=( x_max-x_min ) // N, replace=False ) + x_min ):
+            for j in range( y_min, y_max ): #( rng.choice( y_max-y_min, size=( y_max-y_min ) // N, replace=False ) + y_min ):
                 pt = ( i, j )
+                # remove duplicate operations
+                if pt in visited_pts:
+                    continue
                 move = ( curr_pt, pt )
                 # visible if move would not cause crash
                 if not crash( move, walls ):
                     vis_graph[ curr_pt ].add( pt )
+                    if pt in vis_graph.keys():
+                        vis_graph[ pt ].add( curr_pt )
+                    else:
+                        vis_graph[ pt ] = { curr_pt }
                     # add node to unexpanded if not previously encountered
-                    if pt not in visited_pts:
+                    if pt not in visited_pts and pt not in unexpanded_pts:
                         unexpanded_pts.append( pt )
+    # no path exists
+    if f_line[ 0 ] not in vis_graph.keys():
+        return
     # iterate over points in visibility graph to get minimum distance to
     # create dict of min distance to start point of finish line
     dist_dict = dict()
     # start with points directly reachable by finish line start
-    unexpanded_pts = [ f_line[ 0 ] ]
+    unexpanded_pts = [ *f_line ]
+    dist_dict[ f_line[ 0 ] ] = 0
+    dist_dict[ f_line[ 1 ] ] = 0
     visited_pts = set()
     # continue expansion until all nodes have min cost
     while unexpanded_pts != []:
@@ -107,30 +121,49 @@ def tm_generate_visibility_graph(state, f_line):
                 unexpanded_pts.append( pt )
     state.vis_graph = vis_graph
     state.dist_dict = dist_dict
+    return []
 
-def tm_hill_climb( state ):
+methods.declare_task_methods( "generate_visibility_graph", [tm_generate_visibility_graph])
+
+def tm_hill_climb( state, f_line ):
     loc = state.loc
     v = state.v
     vis_graph = state.vis_graph
     dist_dict = state.dist_dict
     # visible points
     vis_points = vis_graph[ loc ]
+    print( vis_points )
     pos_next_attitude = dict()
     # points that can be achieved given current v, loc and visibility
     for dv_x in [ -1, 0, 1 ]:
         for dv_y in [ -1, 0, 1 ]:
             new_v = ( v[ 0 ] + dv_x, v[ 1 ] + dv_y )
             new_loc = ( loc[ 0 ] + new_v[ 0 ], loc[ 1 ] + new_v[ 1 ] )
+            print(new_loc)
+            print(new_loc in vis_points)
             if new_loc in vis_points:
-                pos_next_attitude[ new_loc: new_v ]
+                pos_next_attitude[ new_loc ] = new_v
+    # print(pos_next_attitude)
+    if len( pos_next_attitude ) == 0:
+        return
     # get minimal distance
     dist = np.inf
+    min_s = np.inf
     for point, velocity in pos_next_attitude.items():
-        if dist_dict[ point ] < dist:
-            action = ( "set_v", velocity )
-    return [ action, ( "hill_climb" ) ]
+        # get speed
+        s = np.sqrt( np.power( velocity[ 0 ], 2 ) + np.power( velocity[ 1 ], 2 ) )
+        # go towards with point with lowest distance to f_line
+        # tie break favoring lowest speed
+        if dist_dict[ point ] < dist or ( dist_dict[ point ] == dist and s < min_s ):
+            target_point = point
+            min_s = s
+    action = ( "set_v", pos_next_attitude[ point ] )
+    if goal_test( ( target_point, pos_next_attitude[ target_point ] ), f_line ):
+        return [ action ]
+    else:
+        return [ action, ( "hill_climb", f_line ) ]
 
-
+methods.declare_task_methods( "hill_climb", [tm_hill_climb] )
 
 
 
