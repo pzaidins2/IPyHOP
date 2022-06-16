@@ -30,6 +30,7 @@ class Actions(object):
         self.action_dict = dict()
         self.action_prob = dict()
         self.action_cost = dict()
+        self.action_muta = dict()
 
     # ******************************        Class Method Declaration        ****************************************** #
     def __str__(self):
@@ -43,6 +44,7 @@ class Actions(object):
     _action_list_type = List[Callable[[Any], Union[State, bool]]]
     _act_prob_dict_type = Dict[str, List]
     _act_cost_dict_type = Dict[str, float]
+    _act_muta_dict_type = Dict[str, _action_list_type]
 
     # ******************************        Class Method Declaration        ****************************************** #
     def declare_actions(self, action_list: _action_list_type):
@@ -58,14 +60,18 @@ class Actions(object):
         self.action_dict.update({action.__name__: action for action in action_list})
         self.action_prob.update({action.__name__: [1, 0] for action in action_list})
         self.action_cost.update({action.__name__: 1.0 for action in action_list})
+        self.action_muta.update({action.__name__: [action, action] for action in action_list})
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def declare_action_models(self, act_prob_dict: _act_prob_dict_type, act_cost_dict: _act_cost_dict_type):
+    def declare_action_models(self, act_prob_dict: _act_prob_dict_type, act_cost_dict: _act_cost_dict_type,
+                              act_muta_dict: _act_muta_dict_type):
         self.action_prob.update({action: act_prob_dict[action] for action in act_prob_dict})
         self.action_cost.update({action: act_cost_dict[action] for action in act_cost_dict})
+        self.action_muta.update({action: act_muta_dict[action] for action in act_cost_dict})
 
         assert(len(self.action_prob.keys()) == len(self.action_dict.keys()))
         assert (len(self.action_cost.keys()) == len(self.action_dict.keys()))
+        assert (len(self.action_muta.keys()) == len(self.action_dict.keys()))
 
 
 # ******************************************    Class Declaration End       ****************************************** #

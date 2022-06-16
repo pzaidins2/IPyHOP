@@ -12,7 +12,7 @@ from typing import List
 from ipyhop import Methods
 from examples.racetrack.search.racetrack import crash, intersect, goal_test
 from examples.racetrack.search.racetrack import main as search
-from examples.racetrack.search.sample_heuristics import h_esdist
+from examples.racetrack.search.sample_heuristics import h_esdist, edistw_to_finish, h_walldist
 
 
 # ******************************************        Helper Functions        ****************************************** #
@@ -24,20 +24,26 @@ methods = Methods()
 
 def tm_finish_at(state, f_line):
     strategy = "gbf"
-    h = h_esdist
+    h = h_walldist
     loc = state.loc
     v = state.v
+    path = [ *state.path ]
     walls = [ *state.walls ]
     problem = [ loc, [*f_line], walls ]
-    path_onwards = search( problem, strategy, h, v_0=v, draw=1)
+    if goal_test( ( loc, v ), f_line ):
+        return []
+    if path == []:
+        path = search( problem, strategy, h, v_0=v, draw=1)
+        path = path[ 1: ]
+    next_act = path.pop()
     # use first action in list until at f_line with v= (0,0)
-    if goal_test( path_onwards[ 1 ], f_line ):
-        return [ ( "set_v", path_onwards[ 1 ][ 1 ]  ) ]
-    else:
-        return [ ( "set_v", path_onwards[ 1 ][ 1 ]  ), ( "finish_at", f_line ) ]
+    next_act = ( "set_v", next_act[ 1 ] )
+    state.path = tuple( path )
+    print(next_act)
+    return [ next_act, ( "finish_at", f_line ) ]
 
 
-methods.declare_task_methods( "finish_at", [tm_finish_at])
+methods.declare_task_methods( "finish_at", [tm_finish_at,tm_finish_at,tm_finish_at])
 
 # # have v = (0,0) and loc = dest
 # def tm_finish_at( state, f_line ):

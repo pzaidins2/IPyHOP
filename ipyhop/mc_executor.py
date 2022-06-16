@@ -26,13 +26,10 @@ class MonteCarloExecutor(object):
             # print(act_inst)
             act_name = act_inst[0]
             act_params = act_inst[1:]
-            act_func = self.actions.action_dict[act_name]
             act_prob = self.actions.action_prob[act_name]
             result = np.random.choice(len(act_prob), 1, p=act_prob)[0]
-            result_state = None
-            if result == 0:
-                result_state = act_func(state_copy.copy(), *act_params)
-
+            act_func = self.actions.action_muta[act_name][ result ]
+            result_state = act_func(state_copy.copy(), *act_params)
             self.exec_list.append((act_inst, result_state))
             if result_state is None:
                 return self.exec_list

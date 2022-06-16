@@ -24,7 +24,7 @@ def set_v( state, new_v ):
     v = state.v
     walls = state.walls
     # can only adjust v by one step
-    if abs( v[ 0 ] - new_v[ 0 ] ) + abs( v[ 1 ] - new_v[ 1 ] ) <= 1:
+    if abs( v[ 0 ] - new_v[ 0 ] ) + abs( v[ 1 ] - new_v[ 1 ] ) <= 2:
         # location after one step
         new_loc = ( loc[ 0 ] + new_v[ 0 ], loc[ 1 ] + new_v[ 1 ] )
         move = ( loc, new_loc )
@@ -34,19 +34,36 @@ def set_v( state, new_v ):
             state.v = new_v
             return state
 
+# failure of set_v where velocity failed to change
+def fail_set_v( state, new_v ):
+    loc = state.loc
+    v = state.v
+    walls = state.walls
+    # location after one step
+    new_loc = (loc[0] + v[0], loc[1] + v[1])
+    move = (loc, new_loc)
+    # if a crash would not occur, update state
+    if not crash(move, walls):
+        state.loc = new_loc
+        return state
+
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.
 actions = Actions()
-actions.declare_actions( [ set_v ] )
+actions.declare_actions( [ set_v, fail_set_v ] )
 
 action_probability = {
-    "set_v": [ 0.8, 0.2 ]
+    "set_v": [ 0.6, 0.4 ]
 }
 
 action_cost = {
     "set_v": 1
 }
 
-actions.declare_action_models(action_probability, action_cost)
+action_mutations ={
+    "set_v": [ set_v, fail_set_v ]
+}
+
+actions.declare_action_models(action_probability, action_cost, action_mutations)
 
 
 # from Dana Nau below
