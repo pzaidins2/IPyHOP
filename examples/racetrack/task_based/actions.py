@@ -39,7 +39,7 @@ actions = Actions()
 actions.declare_actions( [ set_v ] )
 
 action_probability = {
-    "set_v": [ 0.8, 0.2 ]
+    "set_v": [ 0.5, 0.5 ]
 }
 
 action_cost = {

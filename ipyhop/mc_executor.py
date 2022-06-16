@@ -4,7 +4,7 @@ File Description: File used for definition of monte-carlo plan executor
 """
 
 # ******************************************    Libraries to be imported    ****************************************** #
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Callable, Optional
 from ipyhop.state import State
 from ipyhop.actions import Actions
 import numpy as np
@@ -18,7 +18,8 @@ class MonteCarloExecutor(object):
         np.random.seed(seed)
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def execute(self, state: State, plan: List[str], actions: Union[Actions, None] = None) -> List[Tuple]:
+    def execute(self, state: State, plan: List[str], actions: Union[Actions, None] = None, fail_handler: Optional[Callable[
+        [Tuple], State]]=None) -> List[Tuple]:
         self.actions = actions if actions is not None else self.actions
         self.exec_list = [(None, state.copy())]
         state_copy = state.copy()
@@ -32,9 +33,11 @@ class MonteCarloExecutor(object):
             result_state = None
             if result == 0:
                 result_state = act_func(state_copy.copy(), *act_params)
-
+            else:
+                if fail_handler != None:
+                    result_state = fail_handler( ( act_name, *act_params ) )
             self.exec_list.append((act_inst, result_state))
-            if result_state is None:
+            if result != 0:
                 return self.exec_list
             state_copy = result_state
         return self.exec_list
