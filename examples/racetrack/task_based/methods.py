@@ -20,13 +20,27 @@ import numpy
 
 # ******************************************        Helper Functions        ****************************************** #
 
+# give possible next loc: v pairs achievable from current state
+def get_next_possible_attitude( loc, v, visibility_graph ):
+    pos_next_attitude = dict()
+    vis_points = visibility_graph[ loc ]
+    for dv_x in [ -1, 0, 1 ]:
+        for dv_y in [ -1, 0, 1 ]:
+            new_v = ( v[ 0 ] + dv_x, v[ 1 ] + dv_y )
+            new_loc = ( loc[ 0 ] + new_v[ 0 ], loc[ 1 ] + new_v[ 1 ] )
+            # print(new_loc)
+            # print(new_loc in vis_points)
+            if new_loc in vis_points:
+                pos_next_attitude[ new_loc ] = new_v
+    return pos_next_attitude
+
 # ******************************************        Method Definitions        **************************************** #
 
 # Create a IPyHOP Methods object. A Methods object stores all the methods defined for the planning domain.
 methods = Methods()
 
 def tm_finish_at(state, f_line):
-    return [ ( "generate_visibility_graph", f_line ), ( "hill_climb", f_line ) ]
+    return [ ( "generate_visibility_graph", f_line ), ("hill_climb", f_line) ]
     # strategy = "gbf"
     # h = h_esdist
     # loc = state.loc
@@ -57,7 +71,17 @@ def tm_generate_visibility_graph(state, f_line):
     # get bounding box
     x_min, y_min = np.min( point_array, axis=0 )
     x_max, y_max = np.max( point_array, axis=0 )
-    print( ( x_max - x_min+1 ) * (y_max-y_min+1))
+    grid_pts = { loc, *f_line }
+    # any point on f_line is acceptable
+    # for i in range(x_min, x_max):
+    #     for j in range(y_min, y_max):
+    rng =np.random.default_rng()
+    for i in range( x_min, x_max + 1 ):
+        for j in range( y_min, y_max + 1 ):
+            grid_pts.add( ( i, j ) )
+
+    goal_locs = { *filter( lambda x: intersect( ( x, x ), f_line ), grid_pts ) }
+    state.goal_loc = goal_locs
     # generate visibility graph for all points in bounding box
     vis_graph = dict()
 
@@ -70,26 +94,26 @@ def tm_generate_visibility_graph(state, f_line):
         curr_pt = unexpanded_pts.pop()
         visited_pts.add( curr_pt )
         vis_graph[ curr_pt ] = set()
-        rng = np.random.default_rng()
-        N = 1
+        # rng = np.random.default_rng()
+        # N = 1
         # check each int point in bounding box for visibility
-        for i in range( x_min, x_max ): #( rng.choice( x_max-x_min, size=( x_max-x_min ) // N, replace=False ) + x_min ):
-            for j in range( y_min, y_max ): #( rng.choice( y_max-y_min, size=( y_max-y_min ) // N, replace=False ) + y_min ):
-                pt = ( i, j )
-                # remove duplicate operations
-                if pt in visited_pts:
-                    continue
-                move = ( curr_pt, pt )
-                # visible if move would not cause crash
-                if not crash( move, walls ):
-                    vis_graph[ curr_pt ].add( pt )
-                    if pt in vis_graph.keys():
-                        vis_graph[ pt ].add( curr_pt )
-                    else:
-                        vis_graph[ pt ] = { curr_pt }
-                    # add node to unexpanded if not previously encountered
-                    if pt not in visited_pts and pt not in unexpanded_pts:
-                        unexpanded_pts.append( pt )
+        for pt in grid_pts:
+            # # remove duplicate operations
+            # if pt in visited_pts:
+            #     continue
+            move = ( curr_pt, pt )
+            # if curr_pt == (18,17) or pt == (18, 17):
+            #     print( crash( move, walls ) )
+            # visible if move would not cause crash
+            if not crash( move, walls ):
+                vis_graph[ curr_pt ].add( pt )
+                if pt in vis_graph.keys():
+                    vis_graph[ pt ].add( curr_pt )
+                else:
+                    vis_graph[ pt ] = { curr_pt }
+                # add node to unexpanded if not previously encountered
+                if pt not in visited_pts and pt not in unexpanded_pts:
+                    unexpanded_pts.append( pt )
     # no path exists
     if f_line[ 0 ] not in vis_graph.keys():
         return
@@ -97,9 +121,8 @@ def tm_generate_visibility_graph(state, f_line):
     # create dict of min distance to start point of finish line
     dist_dict = dict()
     # start with points directly reachable by finish line start
-    unexpanded_pts = [ *f_line ]
-    dist_dict[ f_line[ 0 ] ] = 0
-    dist_dict[ f_line[ 1 ] ] = 0
+    unexpanded_pts = [ *goal_locs ]
+    dist_dict.update( { pt: 0 for pt in goal_locs } )
     visited_pts = set()
     # continue expansion until all nodes have min cost
     while unexpanded_pts != []:
@@ -107,8 +130,10 @@ def tm_generate_visibility_graph(state, f_line):
         visited_pts.add( curr_pt )
         # get visible points
         vis_points = vis_graph[ curr_pt ]
+        # print("DIST_DICT CALC")
+        # print(vis_points)
         # get distance to visible points
-        dist_to = { pt: np.sqrt( np.power( pt[ 0 ] - curr_pt[ 0 ], 2 ) + np.power( pt[ 1 ] - curr_pt[ 1 ], 2 ) )
+        dist_to = { pt: np.linalg.norm( np.asarray( curr_pt ) - np.asarray( pt ) )
                       for pt in vis_points }
         dist_from = dist_dict[ curr_pt ]
         # update dist_dict for all visible points
@@ -128,50 +153,147 @@ methods.declare_task_methods( "generate_visibility_graph", [tm_generate_visibili
 def tm_hill_climb( state, f_line ):
     loc = state.loc
     v = state.v
+    way_points = []
+    wp = loc
     vis_graph = state.vis_graph
     dist_dict = state.dist_dict
-    # visible points
-    vis_points = vis_graph[ loc ]
-    print( vis_points )
-    pos_next_attitude = dict()
-    # points that can be achieved given current v, loc and visibility
-    for dv_x in [ -1, 0, 1 ]:
-        for dv_y in [ -1, 0, 1 ]:
-            new_v = ( v[ 0 ] + dv_x, v[ 1 ] + dv_y )
-            new_loc = ( loc[ 0 ] + new_v[ 0 ], loc[ 1 ] + new_v[ 1 ] )
-            print(new_loc)
-            print(new_loc in vis_points)
-            if new_loc in vis_points:
-                pos_next_attitude[ new_loc ] = new_v
-    # print(pos_next_attitude)
-    if len( pos_next_attitude ) == 0:
-        return
-    # get minimal distance
-    dist = np.inf
-    min_s = np.inf
-    for point, velocity in pos_next_attitude.items():
-        # get speed
-        s = np.sqrt( np.power( velocity[ 0 ], 2 ) + np.power( velocity[ 1 ], 2 ) )
-        # go towards with point with lowest distance to f_line
-        # tie break favoring lowest speed
-        if dist_dict[ point ] < dist or ( dist_dict[ point ] == dist and s < min_s ):
-            target_point = point
-            min_s = s
-    action = ( "set_v", pos_next_attitude[ point ] )
-    if goal_test( ( target_point, pos_next_attitude[ target_point ] ), f_line ):
-        return [ action ]
-    else:
-        return [ action, ( "hill_climb", f_line ) ]
+    # limit distance between waypoints based on current velocity
+    max_wp_dist = 15
+    while True:
+        # visible points
+        vis_points = [ *filter( lambda x: np.linalg.norm( np.asarray( x ) - np.asarray( wp )  ) <= max_wp_dist, vis_graph[ wp ] ) ]
+        # points that can be achieved given current v, loc and visibility
+        vis_points.sort( key=lambda x: dist_dict[ x ] )
+        wp = vis_points[ 0 ]
+        print(wp)
+        way_points.append( wp )
+        if intersect( ( wp, wp ), f_line ):
+            break
+    move_tasks = [ ( "move_to", point ) for point in way_points[ :-1 ] ]
+    stop_task = ( "stop_at", way_points[ -1 ] )
+    print( [ *move_tasks, stop_task ] )
+    return [ *move_tasks, stop_task ]
+
 
 methods.declare_task_methods( "hill_climb", [tm_hill_climb] )
 
+# from state search up to depth deep
+# use state that is at target_loc with minimum speed
+def move_to( state, target_loc, stop_at=False, depth=1 ):
+    print("DEPTH")
+    print(depth)
+    loc = state.loc
+    v = state.v
+    vis_graph = state.vis_graph
+    state_chains = { ( ( loc, v ), ) }
+    unique_states = { ( loc, v ) }
+    # print(state_chains)
+    new_state_chains = { *state_chains }
+    # explore reachable states up to depth away
+    for i in range( depth ):
+        new_state_chains_copy = { *new_state_chains }
+        new_state_chains = set()
+        # only expand for frontier states
+        for r_state_chain in new_state_chains_copy:
+            r_state = r_state_chain[ -1 ]
+            # print( r_state_chain )
+            pos_next_attitudes = get_next_possible_attitude( *r_state, vis_graph )
+            # print( pos_next_attitudes )
+            next_attitudes = { *filter( lambda x: x not in unique_states, pos_next_attitudes.items() ) }
+            unique_states = unique_states.union( next_attitudes )
+            new_r_state_chains = { ( *r_state_chain, x ) for x in next_attitudes }
+            # print("R_STATE_CHAINS")
+            # print( new_r_state_chains )
+            new_state_chains = new_state_chains.union( new_r_state_chains )
+            # print("NEW_STATE_CHAINS")
+            # print( new_state_chains )
+        state_chains = state_chains.union( new_state_chains )
+    # filter states to only those that are at target_loc
+    # print( state_chains )
+    if stop_at == False:
+        target_state_chains = [ *filter( lambda x: x[ -1 ][ 0 ] == target_loc, state_chains ) ]
+    else:
+        target_state_chains = [ *filter( lambda x: x[ -1 ][ 0 ] == target_loc and x[ -1 ][ 1 ] == ( 0, 0 ),
+                                       state_chains ) ]
+    # cannot reach desired state within depth
+    if len( target_state_chains ) == 0:
+        return
+    # stable sort to prefer short paths given same speed
+    target_state_chains.sort( key=lambda x: len( x ) )
+    # get state with lowest speed at target loc
+    target_state_chains.sort( key=lambda x: np.linalg.norm( np.asarray( x[ -1 ][ 1 ]  ) ) )
+    # print( target_state_chains )
+    target_chain = target_state_chains[ 0 ]
+    return [ ( "set_v", x[ 1 ] ) for x in target_chain[ 1: ] ]
 
+def move_to_1( state, loc ):
+    return move_to( state, loc, depth=1 )
 
+def move_to_2( state, loc ):
+    return move_to( state, loc, depth=2 )
 
+def move_to_3( state, loc ):
+    return move_to( state, loc, depth=3 )
 
+def move_to_4( state, loc ):
+    return move_to( state, loc, depth=4 )
 
+def move_to_5( state, loc ):
+    return move_to( state, loc, depth=5 )
 
+def move_to_6( state, loc ):
+    return move_to( state, loc, depth=6 )
 
+def move_to_7( state, loc ):
+    return move_to( state, loc, depth=7 )
+
+def move_to_8( state, loc ):
+    return move_to( state, loc, depth=8 )
+
+def move_to_9( state, loc ):
+    return move_to( state, loc, depth=9 )
+
+def move_to_10( state, loc ):
+    return move_to( state, loc, depth=10 )
+
+methods.declare_task_methods( "move_to", [ move_to_1, move_to_2, move_to_3, move_to_4, move_to_5,
+    move_to_6, move_to_7, move_to_8, move_to_9, move_to_10 ] )
+
+def stop_at( state, loc, depth=1 ):
+    return move_to( state, loc, stop_at=True, depth=depth)
+
+def stop_at_1( state, loc ):
+    return stop_at( state, loc, depth=1 )
+
+def stop_at_2( state, loc ):
+    return stop_at( state, loc, depth=2 )
+
+def stop_at_3( state, loc ):
+    return stop_at( state, loc, depth=3 )
+
+def stop_at_4( state, loc ):
+    return stop_at( state, loc, depth=4 )
+
+def stop_at_5( state, loc ):
+    return stop_at( state, loc, depth=5 )
+
+def stop_at_6( state, loc ):
+    return stop_at( state, loc, depth=6 )
+
+def stop_at_7( state, loc ):
+    return stop_at( state, loc, depth=7 )
+
+def stop_at_8( state, loc ):
+    return stop_at( state, loc, depth=8 )
+
+def stop_at_9( state, loc ):
+    return stop_at( state, loc, depth=9 )
+
+def stop_at_10( state, loc ):
+    return stop_at( state, loc, depth=10 )
+
+methods.declare_task_methods( "stop_at", [ stop_at_1, stop_at_2, stop_at_3, stop_at_4, stop_at_5,
+    stop_at_6, stop_at_7, stop_at_8, stop_at_9, stop_at_10 ]  )
 
 # # have v = (0,0) and loc = dest
 # def tm_finish_at( state, f_line ):

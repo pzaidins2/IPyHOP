@@ -16,6 +16,7 @@ The racetrack actions use three state variables:
 """
 
 from ipyhop import Actions
+import numpy as np
 
 # all actions are usable on condition that there is no crash
 # set velocity to new_v
@@ -24,7 +25,7 @@ def set_v( state, new_v ):
     v = state.v
     walls = state.walls
     # can only adjust v by one step
-    if abs( v[ 0 ] - new_v[ 0 ] ) + abs( v[ 1 ] - new_v[ 1 ] ) <= 1:
+    if np.linalg.norm( np.asarray( new_v ) - np.asarray( v ) ) < 1.9:
         # location after one step
         new_loc = ( loc[ 0 ] + new_v[ 0 ], loc[ 1 ] + new_v[ 1 ] )
         move = ( loc, new_loc )

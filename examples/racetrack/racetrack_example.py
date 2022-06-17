@@ -7,7 +7,7 @@ File Description: Racetrack example file. Run this file to solve the Rescue plan
 from __future__ import print_function
 from examples.racetrack.task_based.methods import methods
 from examples.racetrack.task_based.actions import actions
-from examples.racetrack.search.sample_probs import rect20, rectwall32a, twisty0
+from examples.racetrack.search.sample_probs import rect20, rect50, rectwall32a, twisty0
 from examples.racetrack.search.racetrack import main as search
 from examples.racetrack.search.sample_heuristics import h_esdist
 from ipyhop import IPyHOP, MonteCarloExecutor, planar_plot, State
@@ -29,7 +29,7 @@ def prob_to_state_and_task( prob ):
 def main():
     # res = search(rect20, "bf", h_esdist )
     # print( res )
-    init_state, task_list = prob_to_state_and_task( rect20 )
+    init_state, task_list = prob_to_state_and_task( twisty0 )
     print(methods)
     print(actions)
     print(init_state)
