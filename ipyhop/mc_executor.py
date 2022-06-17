@@ -32,14 +32,14 @@ class MonteCarloExecutor(object):
             result = np.random.choice(len(act_prob), 1, p=act_prob)[0]
             result_state = None
             if result == 0:
-                result_state = act_func(state_copy.copy(), *act_params)
+                result_state = act_func(state_copy, *act_params)
             else:
                 if fail_handler != None:
                     result_state = fail_handler( ( act_name, *act_params ) )
             self.exec_list.append((act_inst, result_state))
-            if result != 0:
+            if result != 0 or result_state == None:
                 return self.exec_list
-            state_copy = result_state
+            state_copy = result_state.copy()
         return self.exec_list
 
 

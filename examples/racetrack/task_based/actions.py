@@ -34,6 +34,8 @@ def set_v( state, new_v ):
             state.loc  = new_loc
             state.v = new_v
             return state
+        else:
+            print("\nSPLAT\n")
 
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.
 actions = Actions()
