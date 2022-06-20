@@ -19,6 +19,7 @@ if __name__ == '__main__':
     history = actor.complete_to_do(init_state,task_list_2,verbose=3)
     print( "Seed is: " + str( seed ) )
     graph = actor.planner.sol_tree
+    print(planner.iterations)
     planar_plot(graph,0)
 
     # while True:
