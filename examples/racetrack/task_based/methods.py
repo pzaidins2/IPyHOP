@@ -61,7 +61,7 @@ methods.declare_task_methods( "finish_at", [tm_finish_at])
 def tm_generate_visibility_graph(state, f_line):
     # get all points in problem
     loc = state.loc
-    walls = state.walls
+    walls = state.rigid[ "walls" ]
     wall_points = set()
     for line in walls:
         wall_points.add( line[ 0 ] )
@@ -80,8 +80,8 @@ def tm_generate_visibility_graph(state, f_line):
         for j in range( y_min, y_max + 1 ):
             grid_pts.add( ( i, j ) )
 
-    goal_locs = { *filter( lambda x: intersect( ( x, x ), f_line ), grid_pts ) }
-    state.goal_loc = goal_locs
+    goal_pts = { *filter( lambda x: intersect( ( x, x ), f_line ), grid_pts ) }
+    state.rigid[ "goal_pts" ] = goal_pts
     # generate visibility graph for all points in bounding box
     vis_graph = dict()
 
@@ -121,8 +121,8 @@ def tm_generate_visibility_graph(state, f_line):
     # create dict of min distance to start point of finish line
     dist_dict = dict()
     # start with points directly reachable by finish line start
-    unexpanded_pts = [ *goal_locs ]
-    dist_dict.update( { pt: 0 for pt in goal_locs } )
+    unexpanded_pts = [ *goal_pts ]
+    dist_dict.update( { pt: 0 for pt in goal_pts } )
     visited_pts = set()
     # continue expansion until all nodes have min cost
     while unexpanded_pts != []:
@@ -144,15 +144,18 @@ def tm_generate_visibility_graph(state, f_line):
             else:
                 dist_dict[ pt ] = dist
                 unexpanded_pts.append( pt )
-    # state.vis_graph = vis_graph
-    # state.dist_dict = dist_dict
-    return [ ("hill_climb", vis_graph, dist_dict, f_line) ]
+    state.rigid[ "vis_graph" ] = vis_graph
+    state.rigid[ "dist_dict" ] = dist_dict
+    return [ ("hill_climb",) ]
 
 methods.declare_task_methods( "generate_visibility_graph", [tm_generate_visibility_graph])
 
-def tm_hill_climb( state, vis_graph, dist_dict, f_line ):
+def tm_hill_climb( state ):
     loc = state.loc
     v = state.v
+    vis_graph = state.rigid[ "vis_graph" ]
+    dist_dict = state.rigid[ "dist_dict" ]
+    goal_pts = state.rigid[ "goal_pts" ]
     way_points = []
     wp = loc
     # vis_graph = state.vis_graph
@@ -167,10 +170,11 @@ def tm_hill_climb( state, vis_graph, dist_dict, f_line ):
         wp = vis_points[ 0 ]
         print(wp)
         way_points.append( wp )
-        if intersect( ( wp, wp ), f_line ):
+        if wp in goal_pts:
             break
-    move_tasks = [ ( "move_to", vis_graph, point ) for point in way_points[ :-1 ] ]
-    stop_task = ( "stop_at", vis_graph, way_points[ -1 ] )
+    move_tasks = [ ( "move_to", point ) for point in way_points[ :-1 ] ]
+    stop_task = ( "stop_at", way_points[ -1 ] )
+    print("PLAN")
     print( [ *move_tasks, stop_task ] )
     return [ *move_tasks, stop_task ]
 
@@ -179,11 +183,12 @@ methods.declare_task_methods( "hill_climb", [tm_hill_climb] )
 
 # from state search up to depth deep
 # use state that is at target_loc with minimum speed
-def move_to( state, vis_graph, target_loc, stop_at=False, depth=1 ):
+def move_to( state, target_loc, stop_at=False, depth=1 ):
     print("DEPTH")
     print(depth)
     loc = state.loc
     v = state.v
+    vis_graph = state.rigid[ "vis_graph" ]
     # vis_graph = state.vis_graph
     state_chains = { ( ( loc, v ), ) }
     unique_states = { ( loc, v ) }
@@ -226,71 +231,71 @@ def move_to( state, vis_graph, target_loc, stop_at=False, depth=1 ):
     target_chain = target_state_chains[ 0 ]
     return [ ( "set_v", x[ 1 ] ) for x in target_chain[ 1: ] ]
 
-def move_to_1( state, vis_graph, loc ):
-    return move_to( state, vis_graph, loc, depth=1 )
+def move_to_1( state, loc ):
+    return move_to( state, loc, depth=1 )
 
-def move_to_2( state, vis_graph, loc ):
-    return move_to( state, vis_graph, loc, depth=2 )
+def move_to_2( state, loc ):
+    return move_to( state, loc, depth=2 )
 
-def move_to_3( state, vis_graph, loc ):
-    return move_to( state, vis_graph, loc, depth=3 )
+def move_to_3( state, loc ):
+    return move_to( state, loc, depth=3 )
 
-def move_to_4( state, vis_graph, loc ):
-    return move_to( state, vis_graph, loc, depth=4 )
+def move_to_4( state, loc ):
+    return move_to( state, loc, depth=4 )
 
-def move_to_5( state, vis_graph, loc ):
-    return move_to( state, vis_graph, loc, depth=5 )
+def move_to_5( state, loc ):
+    return move_to( state, loc, depth=5 )
 
-def move_to_6( state, vis_graph, loc ):
-    return move_to( state, vis_graph, loc, depth=6 )
+def move_to_6( state, loc ):
+    return move_to( state, loc, depth=6 )
 
-def move_to_7( state, vis_graph, loc ):
-    return move_to( state, vis_graph, loc, depth=7 )
+def move_to_7( state, loc ):
+    return move_to( state, loc, depth=7 )
 
-def move_to_8( state, vis_graph, loc ):
-    return move_to( state, vis_graph, loc, depth=8 )
+def move_to_8( state, loc ):
+    return move_to( state, loc, depth=8 )
 
-def move_to_9( state, vis_graph, loc ):
-    return move_to( state, vis_graph, loc, depth=9 )
+def move_to_9( state, loc ):
+    return move_to( state, loc, depth=9 )
 
-def move_to_10( state, vis_graph, loc ):
-    return move_to( state, vis_graph, loc, depth=10 )
+def move_to_10( state, loc ):
+    return move_to( state, loc, depth=10 )
 
 methods.declare_task_methods( "move_to", [ move_to_1, move_to_2, move_to_3, move_to_4, move_to_5,
     move_to_6, move_to_7, move_to_8, move_to_9, move_to_10 ] )
 
-def stop_at( state, vis_graph, loc, depth=1 ):
-    return move_to( state, vis_graph, loc, stop_at=True, depth=depth)
+def stop_at( state, loc, depth=1 ):
+    return move_to( state, loc, stop_at=True, depth=depth)
 
-def stop_at_1( state, vis_graph, loc ):
-    return stop_at( state, vis_graph, loc, depth=1 )
+def stop_at_1( state, loc ):
+    return stop_at( state, loc, depth=1 )
 
-def stop_at_2( state, vis_graph, loc ):
-    return stop_at( state, vis_graph, loc, depth=2 )
+def stop_at_2( state, loc ):
+    return stop_at( state, loc, depth=2 )
 
-def stop_at_3( state, vis_graph, loc ):
-    return stop_at( state, vis_graph, loc, depth=3 )
+def stop_at_3( state, loc ):
+    return stop_at( state, loc, depth=3 )
 
-def stop_at_4( state, vis_graph, loc ):
-    return stop_at( state, vis_graph, loc, depth=4 )
+def stop_at_4( state, loc ):
+    return stop_at( state, loc, depth=4 )
 
-def stop_at_5( state, vis_graph, loc ):
-    return stop_at( state, vis_graph, loc, depth=5 )
+def stop_at_5( state, loc ):
+    return stop_at( state, loc, depth=5 )
 
-def stop_at_6( state, vis_graph, loc ):
-    return stop_at( state, vis_graph, loc, depth=6 )
+def stop_at_6( state, loc ):
+    return stop_at( state, loc, depth=6 )
 
-def stop_at_7( state, vis_graph, loc ):
-    return stop_at( state, vis_graph, loc, depth=7 )
+def stop_at_7( state, loc ):
+    return stop_at( state, loc, depth=7 )
 
-def stop_at_8( state, vis_graph, loc ):
-    return stop_at( state, vis_graph, loc, depth=8 )
+def stop_at_8( state, loc ):
+    return stop_at( state, loc, depth=8 )
 
-def stop_at_9( state, vis_graph, loc ):
-    return stop_at( state, vis_graph, loc, depth=9 )
+def stop_at_9( state, loc ):
+    return stop_at( state, loc, depth=9 )
 
-def stop_at_10( state, vis_graph, loc ):
-    return stop_at( state, vis_graph, loc, depth=10 )
+def stop_at_10( state, loc ):
+    return stop_at( state, loc, depth=10 )
 
 methods.declare_task_methods( "stop_at", [ stop_at_1, stop_at_2, stop_at_3, stop_at_4, stop_at_5,
     stop_at_6, stop_at_7, stop_at_8, stop_at_9, stop_at_10 ]  )

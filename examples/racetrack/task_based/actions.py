@@ -23,7 +23,7 @@ import numpy as np
 def set_v( state, new_v ):
     loc = state.loc
     v = state.v
-    walls = state.walls
+    walls = state.rigid[ "walls" ]
     # can only adjust v by one step
     if np.linalg.norm( np.asarray( new_v ) - np.asarray( v ) ) < 1.9:
         # location after one step
