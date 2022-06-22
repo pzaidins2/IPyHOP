@@ -30,7 +30,7 @@ def prob_to_state_and_task( prob ):
 def main():
     # res = search(rect20, "bf", h_esdist )
     # print( res )
-    init_state, task_list = prob_to_state_and_task( twisty0 )
+    init_state, task_list = prob_to_state_and_task( rect20 )
     print(methods)
     print(actions)
     print(init_state)

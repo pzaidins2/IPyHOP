@@ -20,18 +20,25 @@ import numpy
 
 # ******************************************        Helper Functions        ****************************************** #
 
+offset = []
+for i in [ -1, 0, 1 ]:
+    for j in [ -1, 0, 1 ]:
+        offset.append( ( i, j ) )
+offset = np.asarray( offset )
+
 # give possible next loc: v pairs achievable from current state
 def get_next_possible_attitude( loc, v, visibility_graph ):
     pos_next_attitude = dict()
     vis_points = visibility_graph[ loc ]
-    for dv_x in [ -1, 0, 1 ]:
-        for dv_y in [ -1, 0, 1 ]:
-            new_v = ( v[ 0 ] + dv_x, v[ 1 ] + dv_y )
-            new_loc = ( loc[ 0 ] + new_v[ 0 ], loc[ 1 ] + new_v[ 1 ] )
-            # print(new_loc)
-            # print(new_loc in vis_points)
-            if new_loc in vis_points:
-                pos_next_attitude[ new_loc ] = new_v
+    new_vs = np.asarray( v ) + offset
+    new_locs = np.asarray( loc ) + new_vs
+    # print(new_loc)
+    # print(new_loc in vis_points)
+    for i in range( new_locs.shape[ 0 ] ):
+        new_loc = tuple( new_locs[ i ] )
+        new_v = tuple( new_vs[ i ] )
+        if new_loc in vis_points:
+            pos_next_attitude[ new_loc ] = new_v
     return pos_next_attitude
 
 # ******************************************        Method Definitions        **************************************** #
