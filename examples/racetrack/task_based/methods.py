@@ -27,9 +27,8 @@ for i in [ -1, 0, 1 ]:
 offset = np.asarray( offset )
 
 # give possible next loc: v pairs achievable from current state
-def get_next_possible_attitude( loc, v, visibility_graph ):
+def get_next_possible_attitude( loc, v, walls ):
     pos_next_attitude = dict()
-    vis_points = visibility_graph[ loc ]
     new_vs = np.asarray( v ) + offset
     new_locs = np.asarray( loc ) + new_vs
     # print(new_loc)
@@ -37,7 +36,7 @@ def get_next_possible_attitude( loc, v, visibility_graph ):
     for i in range( new_locs.shape[ 0 ] ):
         new_loc = tuple( new_locs[ i ] )
         new_v = tuple( new_vs[ i ] )
-        if new_loc in vis_points:
+        if not crash( ( loc, new_loc ), walls ):
             pos_next_attitude[ new_loc ] = new_v
     return pos_next_attitude
 
@@ -73,25 +72,34 @@ def tm_generate_visibility_graph(state, f_line):
     for line in walls:
         wall_points.add( line[ 0 ] )
         wall_points.add( line[ 1 ] )
-    points = { loc, *f_line, *wall_points }
-    point_array = np.array( [ np.array( pt ) for pt in points ] )
-    # get bounding box
-    x_min, y_min = np.min( point_array, axis=0 )
-    x_max, y_max = np.max( point_array, axis=0 )
-    grid_pts = { loc, *f_line }
-    # any point on f_line is acceptable
-    # for i in range(x_min, x_max):
-    #     for j in range(y_min, y_max):
-    rng =np.random.default_rng()
-    for i in range( x_min, x_max + 1 ):
-        for j in range( y_min, y_max + 1 ):
-            grid_pts.add( ( i, j ) )
+    # get points on f_line
+    f_line_array = np.asarray(f_line)
+    x_min, y_min = np.min(f_line_array, axis=0)
+    x_max, y_max = np.max(f_line_array, axis=0)
+    goal_pts = set()
+    for i in range(x_min, x_max + 1):
+        for j in range(y_min, y_max + 1):
+            pt = (i, j)
+            if intersect((pt, pt), f_line):
+                goal_pts.add(pt)
+    state.rigid["goal_pts"] = goal_pts
+    # get surrounding points for all vertices
+    points = { loc, *goal_pts, *wall_points }
 
-    goal_pts = { *filter( lambda x: intersect( ( x, x ), f_line ), grid_pts ) }
-    state.rigid[ "goal_pts" ] = goal_pts
-    # generate visibility graph for all points in bounding box
+    points_array = np.asarray( [ *points ] )
+    points_array = points_array[ :, :, np.newaxis ] + np.transpose( offset )[ np.newaxis, : , :]
+    points_array = np.reshape( points_array, ( points_array.shape[ 0 ] * points_array.shape[ 2 ], points_array.shape[ 1 ] ), order="F" )
+
+    points = { tuple( pt ) for pt in points_array }
+    # points_array = []
+    # for pt in points:
+    #     adj_pts = np.asarray( pt ) + offset
+    #     points_array += [ tuple( adj_pt ) for adj_pt in adj_pts ]
+    # points = { *points_array }
+    # points_array = np.asarray( points_array )
+
+    # generate visibility graph
     vis_graph = dict()
-
     start_pt = loc
     unexpanded_pts = [ start_pt ]
     visited_pts = set()
@@ -104,25 +112,25 @@ def tm_generate_visibility_graph(state, f_line):
         # rng = np.random.default_rng()
         # N = 1
         # check each int point in bounding box for visibility
-        for pt in grid_pts:
-            # # remove duplicate operations
-            # if pt in visited_pts:
-            #     continue
+        for pt in points:
             move = ( curr_pt, pt )
-            # if curr_pt == (18,17) or pt == (18, 17):
-            #     print( crash( move, walls ) )
+            # print( move )
+            # print( crash( move, walls ) )
             # visible if move would not cause crash
             if not crash( move, walls ):
                 vis_graph[ curr_pt ].add( pt )
-                if pt in vis_graph.keys():
-                    vis_graph[ pt ].add( curr_pt )
-                else:
-                    vis_graph[ pt ] = { curr_pt }
+                # if pt in vis_graph.keys():
+                #     vis_graph[ pt ].add( curr_pt )
+                # else:
+                #     vis_graph[ pt ] = { curr_pt }
                 # add node to unexpanded if not previously encountered
                 if pt not in visited_pts and pt not in unexpanded_pts:
                     unexpanded_pts.append( pt )
     # no path exists
-    if f_line[ 0 ] not in vis_graph.keys():
+    if all(  [ goal_pt not in vis_graph.keys() for goal_pt in goal_pts ] ):
+        print("No GOAL PT IN VIS_GRAPH")
+        print( goal_pts )
+        print(vis_graph.keys())
         return
     # iterate over points in visibility graph to get minimum distance to
     # create dict of min distance to start point of finish line
@@ -151,6 +159,10 @@ def tm_generate_visibility_graph(state, f_line):
             else:
                 dist_dict[ pt ] = dist
                 unexpanded_pts.append( pt )
+    if loc not in dist_dict.keys():
+        print( "LOC NOT IN DIST_DICT")
+        print( dist_dict.keys() )
+        return
     state.rigid[ "vis_graph" ] = vis_graph
     state.rigid[ "dist_dict" ] = dist_dict
     return [ ("hill_climb",) ]
@@ -195,7 +207,7 @@ def move_to( state, target_loc, stop_at=False, depth=1 ):
     print(depth)
     loc = state.loc
     v = state.v
-    vis_graph = state.rigid[ "vis_graph" ]
+    walls= state.rigid[ "walls" ]
     # vis_graph = state.vis_graph
     state_chains = { ( ( loc, v ), ) }
     unique_states = { ( loc, v ) }
@@ -209,7 +221,7 @@ def move_to( state, target_loc, stop_at=False, depth=1 ):
         for r_state_chain in new_state_chains_copy:
             r_state = r_state_chain[ -1 ]
             # print( r_state_chain )
-            pos_next_attitudes = get_next_possible_attitude( *r_state, vis_graph )
+            pos_next_attitudes = get_next_possible_attitude( *r_state, walls )
             # print( pos_next_attitudes )
             next_attitudes = { *filter( lambda x: x not in unique_states, pos_next_attitudes.items() ) }
             unique_states = unique_states.union( next_attitudes )
