@@ -12,6 +12,7 @@ The state is described with following properties:
 - rigid = dict of properties that should not change
     - type_dict = dict with types as keys and sets of all objects of the corresponding type as values
     - includes = dict with orders as keys and set of products needed as values
+    - included_in = inverse of includes such that o in included_in[ next( iter( includes[ o ] ) ) ]
 - made = dict with products as keys and boolean value representing whether product has been made
 - busy = boolean value that is True when product in production else False
 - making = dict with products as keys and bool indicating whether product is in production as values
@@ -53,10 +54,11 @@ def end_make_product( state, p ):
 
 # deliver product for order
 def deliver_product( state, p, o ):
-    type_dict = state.rigid[ "type_dict" ]
+    rigid = state.rigid
+    type_dict = rigid[ "type_dict" ]
     making = state.making
     started = state.started
-    includes = state.rigid[ "includes"]
+    includes = rigid[ "includes"]
     # type check
     if type_check( [ p, o ], [ "product", "order" ], type_dict ):
         # must be making the product, started the order, and the product must be in the order
@@ -96,21 +98,24 @@ def ship_order( state, o ):
             return state
 
 
-
-
-
-
-
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.
 actions = Actions()
-actions.declare_actions( [  ] )
+actions.declare_actions( [ start_make_product, end_make_product, deliver_product, start_order, ship_order ] )
 
 action_probability = {
-    "set_v": [ 1, 0 ]
+    "start_make_product": [ 1, 0 ],
+    "end_make_product": [ 1, 0 ],
+    "deliver_product": [ 1, 0 ],
+    "start_order": [ 1, 0 ],
+    "ship_order": [ 1, 0 ],
 }
 
 action_cost = {
-    "set_v": 1
+    "start_make_product": 1,
+    "end_make_product": 1,
+    "deliver_product": 1,
+    "start_order": 1,
+    "ship_order": 1,
 }
 
 actions.declare_action_models(action_probability, action_cost)
