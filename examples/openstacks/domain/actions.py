@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 File Description: Openstacks (Propositional) actions file. All the actions for Openstacks planning domain are defined here.
-Derived from: PyHOP example of Openstacks domain variant as described https://ipg.host.cs.st-andrews.ac.uk/challenge/#challenge
+Derived from: https://github.com/shop-planner/plan-repair-icaps2020-htnws/blob/master/problems/openstacks/domain.lisp
 
 Each IPyHOP action is a Python function. The 1st argument is the current state, and the others are the planning
 action's usual arguments. This is analogous to how methods are defined for Python classes (where the first argument
@@ -13,6 +13,7 @@ The state is described with following properties:
     - type_dict = dict with types as keys and sets of all objects of the corresponding type as values
     - includes = dict with orders as keys and set of products needed as values
     - included_in = inverse of includes such that o in included_in[ next( iter( includes[ o ] ) ) ]
+    - max_stacks = int for max allowable number of maximum stacks
 - made = dict with products as keys and boolean value representing whether product has been made
 - busy = boolean value that is True when product in production else False
 - making = dict with products as keys and bool indicating whether product is in production as values
@@ -26,96 +27,79 @@ The state is described with following properties:
 from ipyhop import Actions
 from typing import List, Dict, Set
 
-# begin product production
-def start_make_product( state, p ):
-    type_dict = state.rigid[ "type_dict" ]
-    made = state.made
-    busy = state.busy
-    # type check
-    if type_check( [ p ], [ "product" ], type_dict ):
-        # product must not ahve been previously made and not busy
-        if not( made[ p ] ) and not( busy ):
-            state.busy = True
-            state.making[ p ] = True
-            return state
-
-# end product production
-def end_make_product( state, p ):
-    type_dict = state.rigid["type_dict"]
-    making = state.making
-    # type check
-    if type_check( [ p ], [ "product" ], type_dict):
-        # must be making the product
-        if making[ p ]:
-            state.made[ p ] = True
-            state.busy = False
-            state.making[ p ] = False
-            return state
-
-# deliver product for order
-def deliver_product( state, p, o ):
+def make_product( state, p ):
     rigid = state.rigid
     type_dict = rigid[ "type_dict" ]
-    making = state.making
+    made = state.made
     started = state.started
-    includes = rigid[ "includes"]
+    included_in = rigid[ "included_in" ]
     # type check
-    if type_check( [ p, o ], [ "product", "order" ], type_dict ):
-        # must be making the product, started the order, and the product must be in the order
-        if all( [ making[ p ], started[ o ], p in includes[ o ] ] ):
-            state.delivered[ o ].add( p )
+    if type_check( [ p ], [ "product" ], type_dict ):
+        # preconditions
+        # p has not been made yet
+        # started all orders that contain p
+        if not( made[ p ] ) and all( [ started[ o ] for o in included_in[ p ] ] ):
+            # effects
+            # p is made
+            state.made[ p ] = True
             return state
 
-# start order
 def start_order( state, o ):
-    type_dict = state.rigid[ "type_dict" ]
-    busy = state.busy
+    rigid = state.rigid
+    type_dict = rigid[ "type_dict" ]
     waiting = state.waiting
     stacks_open = state.stacks_open
-    max_stacks = state.rigid[ "max_stacks" ]
+    max_stacks = rigid[ "max_stacks"]
     # type check
     if type_check( [ o ], [ "order" ], type_dict ):
-        # not busy, waiting for order, and have available stacks
-        if all( [ not( busy ), waiting[ o ], stacks_open < max_stacks ] ):
+        # precondtions
+        # waiting on order
+        # fewer open stacks than the maximum
+        if waiting[ o ] and stacks_open < max_stacks:
+            # effects
+            # no longer waiting for order
             state.waiting[ o ] = False
+            # started order
             state.started[ o ] = True
-            state.stacks_open += 1
+            # open new stack
+            state.stacks_open +=1
             return state
 
-# close order
 def ship_order( state, o ):
-    type_dict = state.rigid[ "type_dict" ]
-    busy = state.busy
+    rigid = state.rigid
+    type_dict = rigid[ "type_dict" ]
+    made = state.made
     started = state.started
-    open_stacks = state.open_stacks
+    stacks_open = state.stacks_open
+    includes = rigid[ "includes" ]
     # type check
     if type_check( [ o ], [ "order" ], type_dict ):
-        # not busy, started order, at least 1 open stacks
-        if all( [ busy, started[ o ], open_stacks >= 1 ] ):
-            state.started[ o ] =  False
+        # preconditions
+        # order is started
+        # all products included in order are made
+        # a stack is open
+        if all( [ started[ o ], all( [ made[ p ] for p in includes[ o ] ] ), stacks_open > 0 ] ):
+            # effects
+            # order is no longer started
+            state.started[ o ] = False
+            # order is shipped
             state.shipped[ o ] = True
-            state.open_stacks -= 1
+            # an open stack is closed
+            state.stacks_open -= 1
             return state
+
 
 
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.
 actions = Actions()
-actions.declare_actions( [ start_make_product, end_make_product, deliver_product, start_order, ship_order ] )
+actions.declare_actions( [ make_product, ship_order, ship_order ] )
 
 action_probability = {
-    "start_make_product": [ 1, 0 ],
-    "end_make_product": [ 1, 0 ],
-    "deliver_product": [ 1, 0 ],
-    "start_order": [ 1, 0 ],
-    "ship_order": [ 1, 0 ],
+
 }
 
 action_cost = {
-    "start_make_product": 1,
-    "end_make_product": 1,
-    "deliver_product": 1,
-    "start_order": 1,
-    "ship_order": 1,
+
 }
 
 actions.declare_action_models(action_probability, action_cost)
