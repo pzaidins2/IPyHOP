@@ -11,131 +11,104 @@ task that the method is for. For example, the task ('get', b1) has a method "tm_
 from ipyhop import Methods
 from actions import type_check
 
+# ******************************************    Helper Functions                     ********************************* #
+
+def ship_cost_heuristic( included_in, started, includes, made, p ):
+    # set of not started orders that includes p
+    includes_p_orders = included_in[ p ]
+    unstarted_orders = filter( lambda x: not( started[ x ] ), includes_p_orders )
+    return order_costs( started, includes, made, unstarted_orders )
+
+def order_costs( started, includes, made, os ):
+    # sum of invifdual order costs
+    sum( map( lambda x: order_cost( started, includes, made, x ), os ) )
+
+def order_cost( started, includes, made, o ):
+    # product cost, add 1 if order started
+    cost = product_cost( includes, made, o )
+    if started[ o ]:
+        cost += 1
+    return cost
+
+def product_cost( includes, made, o ):
+    # number of products included in order and not made
+    ps = includes[ o ]
+    unmade_ps = filter( lambda x: not( made[ x ], ps ) )
+    return len( unmade_ps )
+
 # ******************************************    Methods                     ****************************************** #
 
-# method to make product and deliver to all relevant orders
-def tm_make_product( state, p ):
+def tm_make_a_product( state ):
+    rigid = state.rigid
+    includes = rigid[ "includes" ]
+    included_in = rigid[ "included_in" ]
+    started = state.started
+    shipped = state.shipped
+    made = state.made
+    type_dict = rigid[ "type_dict" ]
+    orders = type_dict[ "order" ]
+    # filter products to only those that are not made and in unshipped orders
+    valid_products = set()
+    unshipped_orders = filter( lambda x: not( shipped[ x ] ), orders )
+    for o in unshipped_orders:
+        included_products = includes[ o ]
+        unmade_products = { *filter( lambda x: not( made[ x ] ), included_products ) }
+        valid_products.union( unmade_products )
+    if len( valid_products ) == 0:
+        return
+    # sort products by ship cost heuristic
+    valid_products = [ *valid_products ]
+    valid_products.sort( key=lambda x:ship_cost_heuristic( included_in, started, includes, x ) )
+    return [ ( "tm_make_product", valid_products[ 0 ] ) ]
+
+def tm_ship_an_order( state, o ):
     rigid = state.rigid
     type_dict = rigid[ "type_dict" ]
-    made = state.made
-    busy = state.busy
-    orders = type_dict[ "order" ]
+    shipped = state.shipped
     includes = rigid[ "includes" ]
-    waiting= state.waiting
-    delivered = state.delivered
-    # type check
-    if type_check( [ p ], [ "product" ], type_dict ):
-        # can only make unmade products and only when not busy
-        if not( made[ p ] ) and not( busy ):
-            task_list = [ ]
-            # get orders that include product
-            rel_orders = filter( lambda x: p in includes[ x ], orders )
-            # for each relevant order open if not open
-            for o in rel_orders:
-                if waiting[ o ]:
-                    task_list.append( ( "start_order" , o ) )
-            # start production
-            task_list.append( ( "start_make_product", p ) )
-            # deliver for all relevant orders and ship if this is last needed product for that order
-            for o in rel_orders:
-                task_list.append( ( "deliver_product", p, o ) )
-                # find instances of delivered where order is o and product is needed for o
-                o_delivered_k = filter( lambda x: x[ 0 ] == o and x[ 1 ] in includes[ o ], delivered.keys() )
-                # only current product has yet to be delivered
-                if all( map( lambda x: delivered[ x ] or x[ 1 ] == p, o_delivered_k ) ):
-                    task_list.append( "ship_order", o )
-            # end product production
-            task_list.append( "end_make_product", p )
-            return task_list
+    made = state.made
+    # o is order
+    # o is not shipped
+    # all p that o includes are made
+    # there exists an open stack
+    if all( [
+        type_check( [ o ], [ "order" ], type_dict ),
+        not( shipped[ o ] ),
+        all( [ made[ p ] for p in includes[ o ] ] ),
+    ] ):
+        return [ ( "ship_order", o ) ]
+
+def tm_make_product( state, p ):
+    return [ ( "tm_start_orders", p ), ( "make_product", p ) ]
+
+def tm_start_orders( state, p ):
+    rigid = state.rigid
+    included_in = rigid[ "included_in" ]
+    started = state.started
+    # start all orders that include p that are not started
+    include_p_orders = included_in[ p ]
+    unstarted_orders = filter( lambda x: started[ x ], include_p_orders )
+    return [ ( "tm_start_an_order", o ) for o in unstarted_orders ]
+
+def start_an_order( state, o ):
+    rigid = state.rigid
+    max_stacks = rigid[ "max_stacks" ]
+    open_stacks = state.open_stacks
+    if open_stacks < max_stacks:
+        return [ ( "start_order", o ) ]
+
+def ship_products( state, o ):
+    open_stacks = state.open_stacks
+    if open_stacks > 0:
+        return [ ( "ship_order", o ) ]
+
 
 
 # Create a IPyHOP Methods object. A Methods object stores all the methods defined for the planning domain.
 methods = Methods()
 
-methods.declare_task_methods( "make_product", [ tm_make_product ] )
+methods.declare_task_methods( "make_product", [ ] )
 
-# method to fill order from start
-def tm_fill_order( state, o ):
-    rigid = state.rigid
-    type_dict = rigid[ "type_dict" ]
-    includes = rigid[ "includes" ]
-    delivered = state.delivered
-    waiting = state.waiting
-    busy = state.busy
-    # type check
-    if type_check( [ o ], [ "order" ], type_dict ):
-        # can only fill unshipped orders
-        if waiting[ o ] and not( busy ):
-            # get all products that o still needs
-            # deliveries needed
-            included_deliveries = filter( lambda x: delivered[ x ], delivered.keys() )
-            missing_products = includes[ o ] - { d[ 1 ] for d in included_deliveries }
-            return [ ( "make_product", p ) for p in missing_products ]
-
-methods.declare_task_methods( "fill_order", [ tm_fill_order ] )
-
-# method to choose which order to fill next
-def tm_select_order( state ):
-    rigid = state.rigid
-    type_dict = rigid[ "type_dict" ]
-    orders = type_dict[ "order" ]
-    includes = rigid[ "includes" ]
-    included_in = rigid[ "included_in"]
-    shipped = state.shipped
-    delivered = state.delivered
-    waiting = state.waiting
-    # for each unshipped order get set of orders that need that product and are waiting
-    unshipped_orders = filter( lambda x: not( shipped[ x ] ), orders )
-    if len( unshipped_orders ) == 0:
-        return []
-    waiting_orders = { *filter( lambda x: waiting[ x ], orders ) }
-    order_set_dict = { o: set() for o in unshipped_orders }
-    for o in unshipped_orders:
-        # products that have been shipped to order
-        p_have = filter( lambda x: x[ 0 ] == o and delivered[ x ], delivered.keys() )
-        p_have = { x[ 1 ] for x in p_have }
-        # products needed for full order
-        p_includes = includes[ o ]
-        # set difference
-        p_needed = p_includes - p_have
-        # get waiting orders that need any p in p_needed
-        for p in p_needed:
-            p_orders = included_in[ p ].intersection( waiting_orders )
-            order_set_dict[ o ].union( p_orders )
-    prioritized_orders = sorted( [ *unshipped_orders ], key=lambda x: len( x ) )
-    if len( prioritized_orders ) > 0:
-        return [ ( "fill_order", prioritized_orders[ 0 ] ), ( "select_task", ) ]
-
-
-
-# method to select which product to produce next
-def tm_select_product( state ):
-    rigid = state.rigid
-    type_dict = rigid[ "type_dict" ]
-    included_in = rigid[ "included_in" ]
-    orders = type_dict[ "order" ]
-    made = state.made
-    includes = rigid[ "includes" ]
-    # products yet to be made
-    demanded_products = set()
-    for o in orders:
-        demanded_products.union( includes[ o ] )
-    # products that still need to be produced
-    needed_products = [ *filter( lambda x: not( made[ x ] ), demanded_products ) ]
-    if len( needed_products ) > 0:
-        return []
-    product_set_dict = dict()
-    # get product that included in set of orders with fewest products still needed
-    for p in needed_products:
-        o_that_includes = included_in[ p ]
-        product_set_dict[ p ] = set()
-        for o in o_that_includes:
-            o_products = includes[ o ].intersection( needed_products )
-            product_set_dict[ p ].union( o_products )
-    prioritized_products = sorted( needed_products, lambda x: len( product_set_dict[ x ] ) )
-    return [ ( "make_product", p ), ( "select_task", ) ]
-
-methods.declare_task_methods( "select_task", [ tm_select_order, tm_select_product ] )
 
 """
 Author(s): Paul Zaidins
