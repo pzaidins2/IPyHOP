@@ -112,6 +112,8 @@ class IPyHOP(object):
         parent_node_id = sub_graph_root_node_id
         prev_node_id = sub_graph_root_node_id
         for _iter in count(0):
+            if parent_node_id in ancestors( self.sol_tree, sub_graph_root_node_id ):
+                break
             curr_node_id = None
             # Get the first Open node from the immediate successors of parent node. (using BFS)
             for node_id in self.sol_tree.successors( parent_node_id ):
@@ -143,6 +145,8 @@ class IPyHOP(object):
             else:
                 prev_node_id = curr_node_id
                 curr_node_id, parent_node_id = self._node_refine( curr_node_id, parent_node_id, _iter )
+            # if parent_node_id in ancestors( self.sol_tree, sub_graph_root_node_id ):
+            #     break
         # return iteration count and reachable most bottom-left node
         # print("THIS")
         # print(curr_node_id)
@@ -151,7 +155,13 @@ class IPyHOP(object):
         # print( self.sol_tree.nodes[ next( dfs_preorder_nodes(self.sol_tree,source=parent_node_id) ) ][ "info"])
         # print( [ (x,self.sol_tree.nodes[x]["info"]) for x in self.sol_tree.successors(parent_node_id) ] )
         # print("THIS END")
-        return _iter, prev_node_id
+        # print( "ID_EXAMINE")
+        # print( prev_node_id )
+        # print( curr_node_id )
+        # print( [*dfs_preorder_nodes( self.sol_tree )] )
+        # print( sub_graph_root_node_id )
+        # print( parent_node_id )
+        return _iter, next( dfs_preorder_nodes( self.sol_tree, sub_graph_root_node_id ) )
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _node_refine(self, curr_node_id: int, parent_node_id: int, _iter: int ):

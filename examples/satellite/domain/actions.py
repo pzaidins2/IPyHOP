@@ -64,7 +64,7 @@ def switch_on( state, i, s ):
             # i in uncalibrated
             state.calibrated[ i ] = False
             # s has no power available
-            state.power_avil[ s ] = False
+            state.power_avail[ s ] = False
             return state
 
 def switch_off( state, i, s ):
@@ -86,7 +86,7 @@ def switch_off( state, i, s ):
             # i is powered off
             state.power_on[ i ] = False
             # s has power available
-            state.power_avil[ s ] = True
+            state.power_avail[ s ] = True
             return state
 
 def calibrate( state, s, i, d ):
@@ -157,11 +157,19 @@ actions = Actions()
 actions.declare_actions( [ turn_to, switch_on, switch_off, calibrate, take_image ] )
 
 action_probability = {
-
+    "turn_to": [ 1, 0 ],
+    "switch_on": [ 0.9, 0.1 ],
+    "switch_off": [ 1, 0 ],
+    "calibrate": [ 1, 0 ],
+    "take_image": [ 1, 0  ]
 }
 
 action_cost = {
-
+    "turn_to": 1,
+    "switch_on": 1,
+    "switch_off": 1,
+    "calibrate": 1,
+    "take_image": 1
 }
 
 actions.declare_action_models(action_probability, action_cost)
