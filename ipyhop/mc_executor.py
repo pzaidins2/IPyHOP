@@ -12,16 +12,18 @@ import numpy as np
 
 # ******************************************    Class Declaration Start     ****************************************** #
 class MonteCarloExecutor(object):
-    def __init__(self, actions: Actions, seed: int = 10):
+    def __init__(self, actions: Actions, deviation_handler: Optional[Callable[
+        [Tuple[Tuple[str],State]], State]]=None, seed: int = 10):
         self.actions = actions
+        self.deviation_handler = deviation_handler
         self.exec_list = None
         np.random.seed(seed)
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def execute(self, state: State, plan: List[str], actions: Union[Actions, None] = None, fail_handler: Optional[Callable[
-        [Tuple], State]]=None) -> List[Tuple]:
+    def execute( self, state: State, plan: List[str], actions: Union[Actions, None] = None,  ) -> List[Tuple]:
         self.actions = actions if actions is not None else self.actions
         self.exec_list = [(None, state.copy())]
+        deviation_handler = self.deviation_handler
         state_copy = state.copy()
         for act_inst in plan:
             # print(act_inst)
@@ -34,10 +36,12 @@ class MonteCarloExecutor(object):
             if result == 0:
                 result_state = act_func(state_copy, *act_params)
             else:
-                if fail_handler != None:
-                    result_state = fail_handler( ( act_name, *act_params ) )
-            self.exec_list.append((act_inst, result_state))
-            if result != 0 or result_state == None:
+                if deviation_handler != None:
+                    deviation_state = deviation_handler( (act_name, *act_params), state_copy )
+                    self.exec_list[ -2 ] = (self.exec_list[ -2 ][ 0 ], deviation_state)
+                    result_state = act_func( deviation_state, *act_params )
+            self.exec_list.append( (act_inst, result_state) )
+            if result_state == None:
                 return self.exec_list
             state_copy = result_state.copy()
         return self.exec_list

@@ -6,6 +6,7 @@ File Description: Blocks World example file. Run this file to solve the Blocks W
 # ******************************************    Libraries to be imported    ****************************************** #
 from examples.satellite.domain.actions import actions
 from examples.satellite.domain.methods import methods
+from examples.satellite.domain.deviations import deviation_handler
 from ipyhop import IPyHOP, State
 from ipyhop.mulitgoal import MultiGoal
 from ipyhop.actor import Actor
@@ -139,17 +140,16 @@ def main():
     #     if "pddl" not in problem_file_name:
     #         continue
     #     print( problem_file_name )
-    while True:
-        problem_file_name = "problems/p20.pddl"
-        problem_file = open( problem_file_name, "r" )
-        problem_str = problem_file.read()
-        problem_file.close()
+    problem_file_name = "problems/p20.pddl"
+    problem_file = open( problem_file_name, "r" )
+    problem_str = problem_file.read()
+    problem_file.close()
 
-        planner = IPyHOP( methods, actions )
-        state_0, goal_a =  init_sat( problem_str )
-        mc_executor = MonteCarloExecutor( actions )
-        actor = Actor( planner, mc_executor )
-        history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
+    planner = IPyHOP( methods, actions )
+    state_0, goal_a =  init_sat( problem_str )
+    mc_executor = MonteCarloExecutor( actions, deviation_handler )
+    actor = Actor( planner, mc_executor )
+    history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
 
 # ******************************************        Main Program End        ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #

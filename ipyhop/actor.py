@@ -88,11 +88,15 @@ class Actor:
                 # print(curr_state)
                 # print(action_list[-1])
                 plan, exec_index = self.planner.replan( curr_state, exec_index, verbose )
-                if plan == []:
+                if plan[ exec_index: ] == []:
                     plan_impossible = True
                     if verbose >= 1:
                         print( "No plan is possible...")
                     break
+                else:
+                    if verbose >= 2:
+                        print( "New plan is:")
+                        print(plan)
         if verbose >= 2 and plan_success:
             print("History:")
             for act in history:

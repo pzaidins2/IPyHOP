@@ -26,6 +26,12 @@ from typing import List, Dict, Set
 from examples.satellite.domain.actions import type_check
 import random
 
+# satellite deviation handler
+def deviation_handler( act_tuple, state ):
+    deviation_operators = [ d_change_direction, d_decalibration, d_power_loss ]
+    d_operator = random.choice( deviation_operators )
+    return d_operator( state )
+
 # mutate random satellite pointing
 def d_change_direction( state ):
     rigid = state.rigid
