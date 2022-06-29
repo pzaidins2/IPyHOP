@@ -162,7 +162,7 @@ if __name__ == '__main__':
 
 
 """
-Author(s): Yash Bansod
-Repository: https://github.com/YashBansod/IPyHOP
+Author(s): Paul Zaidins
+Repository: https://github.com/pzaidins2/IPyHOP
 Organization: University of Maryland at College Park
 """

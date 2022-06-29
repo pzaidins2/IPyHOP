@@ -17,7 +17,7 @@ from examples.satellite.domain.actions import type_check
 # ******************************************    Methods                     ****************************************** #
 
 
-N = 2
+N = 3
 
 # Create a IPyHOP Methods object. A Methods object stores all the methods defined for the planning domain.
 methods = Methods()

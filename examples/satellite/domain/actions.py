@@ -157,11 +157,11 @@ actions = Actions()
 actions.declare_actions( [ turn_to, switch_on, switch_off, calibrate, take_image ] )
 
 action_probability = {
-    "turn_to": [ 1, 0 ],
-    "switch_on": [ 1, 0 ],
-    "switch_off": [ 1, 0 ],
-    "calibrate": [ 1, 0 ],
-    "take_image": [ 0.9, 0.1  ]
+    "turn_to": [ 0.8, 0.2  ],
+    "switch_on": [ 0.8, 0.2  ],
+    "switch_off": [ 0.8, 0.2  ],
+    "calibrate": [ 0.8, 0.2  ],
+    "take_image": [ 0.8, 0.2  ]
 }
 
 action_cost = {

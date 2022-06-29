@@ -37,7 +37,7 @@ class Actor:
         history = []
         # find plan to complete to_do_list
         plan = self.planner.plan(initial_state, to_do_list, verbose=verbose)
-        print( self.planner.iterations )
+        # print( self.planner.iterations )
         if verbose >= 1:
             print("Initial plan created\n")
             if verbose >= 2:

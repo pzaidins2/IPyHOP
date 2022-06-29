@@ -183,7 +183,7 @@ class IPyHOP(object):
             # If methods are available for refining the task, use them.
             # print( curr_node['available_methods'])
             while curr_node['available_methods'] != []:
-                print(curr_node["available_methods"])
+                # print(curr_node["available_methods"])
                 method = next(iter(curr_node['available_methods']))
                 curr_node['selected_method'] = method
                 curr_node['available_methods'].remove(method)
@@ -342,7 +342,7 @@ class IPyHOP(object):
         # if problem place on stack and repeat repair process
         # if at any point in repair process the previous node on the stack is descendant of current problem,
         # pop from stack and continue repair procedure from previous node
-        print(exec_plan_index )
+        # print(exec_plan_index )
         while node_id_stack != []:
 
             if verbose >= 3:
