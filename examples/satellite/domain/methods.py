@@ -17,7 +17,7 @@ from examples.satellite.domain.actions import type_check
 # ******************************************    Methods                     ****************************************** #
 
 
-
+N = 2
 
 # Create a IPyHOP Methods object. A Methods object stores all the methods defined for the planning domain.
 methods = Methods()
@@ -50,7 +50,7 @@ def mgm_main_2( state, multigoal ):
     if len( mg_pointing - state_pointing ) == 0 and len( mg_have_image - mg_pointing ) == 0:
         return []
 
-methods.declare_multigoal_methods( None, [ mgm_main_0, mgm_main_1, mgm_main_2 ] )
+methods.declare_multigoal_methods( None, N*[ mgm_main_0, mgm_main_1, mgm_main_2 ] )
 
 def gm_have_image( state, image, val ):
     d, m = image
@@ -68,7 +68,7 @@ def gm_have_image( state, image, val ):
             if m in supports[ i ]:
                 return [ ( "t_prepare_instrument", s, i ), ( "t_take_image", s, i, d, m ) ]
 
-methods.declare_goal_methods( "have_image", [ gm_have_image ] )
+methods.declare_goal_methods( "have_image", N*[ gm_have_image ] )
 def tm_take_image_0( state, s, i, d, m ):
     pointing = state.pointing
     # s pointing at d
@@ -82,12 +82,12 @@ def tm_take_image_1( state, s, i, d, m ):
         d_prev = pointing[ s ]
         return [ ( "turn_to", s, d, d_prev ), ( "take_image", s, d, i, m ) ]
 
-methods.declare_task_methods( "t_take_image", [ tm_take_image_0, tm_take_image_1 ] )
+methods.declare_task_methods( "t_take_image", N*[ tm_take_image_0, tm_take_image_1 ] )
 
 def tm_prepare_instrument( state, s, i ):
     return [ ( "t_turn_on_instrument", s, i ), ( "t_calibrate_instrument", s, i )]
 
-methods.declare_task_methods( "t_prepare_instrument", [ tm_prepare_instrument ] )
+methods.declare_task_methods( "t_prepare_instrument", N*[ tm_prepare_instrument ] )
 
 def tm_turn_on_instrument_0( state, s, i):
     power_on = state.power_on
@@ -108,7 +108,7 @@ def tm_turn_on_instrument_2( state, s, i ):
         if power_on[ i_on_s ] and i_on_s != i:
             return [ ( "switch_off", i_on_s, s ), ( "switch_on", i, s ) ]
 
-methods.declare_task_methods( "t_turn_on_instrument", [ tm_turn_on_instrument_0, tm_turn_on_instrument_1, tm_turn_on_instrument_2 ] )
+methods.declare_task_methods( "t_turn_on_instrument", N*[ tm_turn_on_instrument_0, tm_turn_on_instrument_1, tm_turn_on_instrument_2 ] )
 
 def tm_calibrate_instrument_0( state, s, i ):
     power_on = state.power_on
@@ -138,9 +138,8 @@ def tm_calibrate_instrument_2( state, s, i ):
     if power_on[ i ] and d_prev != d_new:
         return [ ( "turn_to", s, d_new, d_prev ), ( "calibrate", s, i, d_new ) ]
 
-methods.declare_task_methods( "t_calibrate_instrument", [ tm_calibrate_instrument_0, tm_calibrate_instrument_1, tm_calibrate_instrument_2 ] )
+methods.declare_task_methods( "t_calibrate_instrument", N*[ tm_calibrate_instrument_0, tm_calibrate_instrument_1, tm_calibrate_instrument_2 ] )
 
-methods.declare_goal_methods( "pointing", [] )
 
 
 """

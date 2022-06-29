@@ -38,7 +38,8 @@ class MonteCarloExecutor(object):
             else:
                 if deviation_handler != None:
                     deviation_state = deviation_handler( (act_name, *act_params), state_copy )
-                    self.exec_list[ -2 ] = (self.exec_list[ -2 ][ 0 ], deviation_state)
+                    print(self.exec_list)
+                    self.exec_list[ -1 ] = (self.exec_list[ -1 ][ 0 ], deviation_state)
                     result_state = act_func( deviation_state, *act_params )
             self.exec_list.append( (act_inst, result_state) )
             if result_state == None:
