@@ -180,7 +180,7 @@ class IPyHOP(object):
         # If current node is a Task
         if curr_node['type'] == 'T':
             subtasks = None
-            # If methods are available for refining the gosl, use them.
+            # If methods are available for refining the task, use them.
             while curr_node[ 'available_methods' ] != [ ]:
                 # get method instance
                 if curr_node[ 'selected_method_instances' ] == None:
@@ -189,22 +189,16 @@ class IPyHOP(object):
                     # create method instance generator
                     curr_node[ 'selected_method_instances' ] = method( self.state, *curr_node_info[ 1: ] )
                 try:
-                    # print( curr_node[ 'selected_method_instances' ] )
                     subtasks = next( curr_node[ 'selected_method_instances' ] )
-                    # print(subtasks)
                 # exhausted all instances of selected method select new method
                 except StopIteration:
                     # get next method
                     curr_node[ 'available_methods' ].pop( 0 )
                     if len( curr_node[ 'available_methods' ] ) > 0:
-
                         method = curr_node[ 'available_methods' ][ 0 ]
-                        # print( method )
                         curr_node[ 'selected_method' ] = method
                         # create method instance generator
                         curr_node[ 'selected_method_instances' ] = method( self.state, *curr_node_info[ 1: ] )
-                        # print( method( self.state, curr_node_info ) )
-                        # print( [  *curr_node[ 'selected_method_instances' ] ] )
                 if subtasks is not None:
                     curr_node[ 'status' ] = 'C'
                     _id = self._add_nodes_and_edges( curr_node_id, subtasks )
@@ -252,20 +246,16 @@ class IPyHOP(object):
                 if self._verbose > 2:
                     print('Iteration {}, Goal {} already achieved'.format(_iter, repr(curr_node_info)))
             else:
-                # If methods are available for refining the gosl, use them.
+                # If methods are available for refining the goal, use them.
                 while curr_node[ 'available_methods' ] != [ ]:
                     # get method instance
                     if curr_node[ 'selected_method_instances' ] == None:
                         method = curr_node[ 'available_methods' ][ 0 ]
-                        # print( method )
                         curr_node[ 'selected_method' ] = method
                         # create method instance generator
-                        # print(curr_node_info  )
                         curr_node[ 'selected_method_instances' ] = method( self.state, *curr_node_info[ 1: ] )
                     try:
-                        # print( curr_node[ 'selected_method_instances' ] )
                         subgoals = next( curr_node[ 'selected_method_instances' ] )
-                        # print( subgoals )
                     # exhausted all instances of selected method select new method
                     except StopIteration:
                         # get next method
@@ -276,8 +266,6 @@ class IPyHOP(object):
                             curr_node[ 'selected_method' ] = method
                             # create method instance generator
                             curr_node[ 'selected_method_instances' ] = method( self.state, *curr_node_info[ 1: ] )
-                            # print( method( self.state, curr_node_info ) )
-                            # print( [  *curr_node[ 'selected_method_instances' ] ] )
                     if subgoals is not None:
                         curr_node[ 'status' ] = 'C'
                         _id = self._add_nodes_and_edges( curr_node_id, subgoals )
@@ -305,7 +293,7 @@ class IPyHOP(object):
                 if self._verbose > 2:
                     print('Iteration {}, MultiGoal {} already achieved'.format(_iter, repr(curr_node_info)))
             else:
-                # If methods are available for refining the gosl, use them.
+                # If methods are available for refining the multigoal, use them.
                 while curr_node[ 'available_methods' ] != [ ]:
                     # get method instance
                     if curr_node[ 'selected_method_instances' ] == None:
@@ -415,9 +403,12 @@ class IPyHOP(object):
             # unexpand node
             sol_tree.remove_nodes_from( descendants( sol_tree, node_id ) )
             node = sol_tree.nodes[ node_id ]
-            node["status"] = "O"
-            node["selected_method"] = None
-            node["state"] = true_state
+            node[ "status" ] = "O"
+            node[ 'available_methods' ] = [ *node[ 'methods' ] ] # CHANGE
+            node[ "selected_method" ] = None
+            node[ "state" ] = None
+            # node[ "state" ] = true_state
+            node[ "selected_method_instances" ] = None # CHANGE
 
             # replace child with parent on stack
             node_id_stack[ 0 ] = parent_id

@@ -22,6 +22,31 @@ N = 1
 # Create a IPyHOP Methods object. A Methods object stores all the methods defined for the planning domain.
 methods = Methods()
 
+def mgm_main( state, multigoal ):
+
+    state_have_image = { *state.have_image.items() }
+    mg_have_image = { *multigoal.have_image.items() }
+    # get have_image goal that is not fulfilled
+    diff_have_image = mg_have_image - state_have_image
+    for g_have_image in diff_have_image:
+        yield [ ("have_image", g_have_image[ 0 ], True), multigoal ]
+
+    pointing = state.pointing
+    state_pointing = { *pointing.items() }
+    mg_pointing = { *multigoal.pointing.items() }
+    # get pointing goal that is not fulfilled
+    diff_pointing = mg_pointing - state_pointing
+    for g_pointing in diff_pointing:
+        s = g_pointing[ 0 ]
+        d_new = g_pointing[ 1 ]
+        d_prev = pointing[ s ]
+        yield [ ("turn_to", s, d_new, d_prev), multigoal ]
+
+    # end when all pointing and have_image goals are fufilled
+    if len( diff_have_image ) == 0 and len( diff_pointing ) == 0:
+        yield [ ]
+
+
 def mgm_main_0( state, multigoal ):
     state_have_image = { *state.have_image.items() }
     mg_have_image = { *multigoal.have_image.items() }
@@ -47,10 +72,10 @@ def mgm_main_2( state, multigoal ):
     state_have_image = { *state.have_image.items() }
     mg_have_image = { *multigoal.have_image.items() }
     # end when all pointing and have_image goals are fufilled
-    if len( mg_pointing - state_pointing ) == 0 and len( mg_have_image - mg_pointing ) == 0:
+    if len( mg_pointing - state_pointing ) == 0 and len( mg_have_image - state_have_image ) == 0:
         yield []
 
-methods.declare_multigoal_methods( None, N*[ mgm_main_0, mgm_main_1, mgm_main_2 ] )
+methods.declare_multigoal_methods( None, N*[ mgm_main ] )
 
 def gm_have_image( state, image, val ):
     d, m = image
@@ -68,7 +93,20 @@ def gm_have_image( state, image, val ):
             if m in supports[ i ]:
                 yield [ ( "t_prepare_instrument", s, i ), ( "t_take_image", s, i, d, m ) ]
 
-methods.declare_goal_methods( "have_image", N*[ gm_have_image ] )
+methods.declare_goal_methods( "have_image", N * [ gm_have_image ] )
+
+def tm_take_image( state, s, i, d, m ):
+
+    pointing = state.pointing
+    d_prev = pointing[ s ]
+    # s pointing at d
+    if (d_prev == d):
+        yield [ ("take_image", s, d, i, m) ]
+
+    # s not pointing at d
+    else:
+        yield [ ("turn_to", s, d, d_prev), ("take_image", s, d, i, m) ]
+
 def tm_take_image_0( state, s, i, d, m ):
     pointing = state.pointing
     # s pointing at d
@@ -82,19 +120,44 @@ def tm_take_image_1( state, s, i, d, m ):
         d_prev = pointing[ s ]
         yield [ ( "turn_to", s, d, d_prev ), ( "take_image", s, d, i, m ) ]
 
-methods.declare_task_methods( "t_take_image", N*[ tm_take_image_0, tm_take_image_1 ] )
+methods.declare_task_methods( "t_take_image", N*[ tm_take_image ] )
 
 def tm_prepare_instrument( state, s, i ):
-    yield [ ( "t_turn_on_instrument", s, i ), ( "t_calibrate_instrument", s, i )]
+    yield [ ( "t_turn_on_instrument", s, i ), ( "t_calibrate_instrument", s, i ) ]
 
 methods.declare_task_methods( "t_prepare_instrument", N*[ tm_prepare_instrument ] )
 
+def tm_turn_on_instrument( state, s, i):
+
+    # i already has power
+    power_on = state.power_on
+    if power_on[ i ]:
+        yield [ ]
+
+    else:
+        # s has no powered instruments
+        power_avail = state.power_avail
+        if power_avail[ s ]:
+            yield [ ("switch_on", i, s) ]
+
+        else:
+            # s has one powered instrument that is not i
+            rigid = state.rigid
+            on_board = rigid[ "on_board" ]
+            for i_on_s in on_board[ s ]:
+                if power_on[ i_on_s ]:
+                    yield [ ("switch_off", i_on_s, s), ("switch_on", i, s) ]
+                    # no point in searching after first instance
+                    break
+
 def tm_turn_on_instrument_0( state, s, i):
+    # i already has power
     power_on = state.power_on
     if power_on[ i ]:
         yield []
 
 def tm_turn_on_instrument_1( state, s, i ):
+    # s has no powered instruments
     power_avail = state.power_avail
     if power_avail[ s ]:
         yield [ ( "switch_on", i, s )]
@@ -104,11 +167,36 @@ def tm_turn_on_instrument_2( state, s, i ):
     power_on = state.power_on
     rigid = state.rigid
     on_board = rigid[ "on_board" ]
+    # s has one powered instrument that is not i
     for i_on_s in on_board[ s ]:
         if power_on[ i_on_s ] and i_on_s != i:
             yield [ ( "switch_off", i_on_s, s ), ( "switch_on", i, s ) ]
 
-methods.declare_task_methods( "t_turn_on_instrument", N*[ tm_turn_on_instrument_0, tm_turn_on_instrument_1, tm_turn_on_instrument_2 ] )
+methods.declare_task_methods( "t_turn_on_instrument", N*[ tm_turn_on_instrument ] )
+
+def tm_calibrate_instrument( state, s, i ):
+
+    power_on = state.power_on
+    calibrated = state.calibrated
+    # i on and calibrated
+    if power_on[ i ]:
+        if calibrated[ i ]:
+            yield [ ]
+
+        # not calibrated
+        else:
+            pointing = state.pointing
+            rigid = state.rigid
+            calibration_target = rigid[ "calibration_target" ]
+            d = pointing[ s ]
+            d_new = calibration_target[ i ]
+            # i on and s pointing at calibration target of i
+            if d_new == d:
+                yield [ ("calibrate", s, i, d) ]
+
+            else:
+                # i on and s not pointing at calibration target of i
+                yield [ ( "turn_to", s, d_new, d ), ( "calibrate", s, i, d_new ) ]
 
 def tm_calibrate_instrument_0( state, s, i ):
     power_on = state.power_on
@@ -138,7 +226,7 @@ def tm_calibrate_instrument_2( state, s, i ):
     if power_on[ i ] and d_prev != d_new:
         yield [ ( "turn_to", s, d_new, d_prev ), ( "calibrate", s, i, d_new ) ]
 
-methods.declare_task_methods( "t_calibrate_instrument", N*[ tm_calibrate_instrument_0, tm_calibrate_instrument_1, tm_calibrate_instrument_2 ] )
+methods.declare_task_methods( "t_calibrate_instrument", N*[ tm_calibrate_instrument ] )
 
 
 

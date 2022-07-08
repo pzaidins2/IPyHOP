@@ -21,7 +21,7 @@ def ship_cost_heuristic( included_in, started, includes, made, p ):
 
 def order_costs( started, includes, made, os ):
     # sum of invifdual order costs
-    sum( map( lambda x: order_cost( started, includes, made, x ), os ) )
+    return sum( map( lambda x: order_cost( started, includes, made, x ), os ) )
 
 def order_cost( started, includes, made, o ):
     # product cost, add 1 if order started
@@ -36,7 +36,105 @@ def product_cost( includes, made, o ):
     unmade_ps = filter( lambda x: not( made[ x ], ps ) )
     return len( unmade_ps )
 
+def ready_to_ship( includes, made, o ):
+    p_in_o = includes[ o ]
+    return all( [ made[ p ] for p in p_in_o ] )
+
 # ******************************************    Methods                     ****************************************** #
+
+# Create a IPyHOP Methods object. A Methods object stores all the methods defined for the planning domain.
+methods = Methods()
+
+def mgm_plan( state, multigoal ):
+    shipped = state.shipped
+    want_shipped = multigoal.shipped
+    need_shipped = { *want_shipped.items() } - { *shipped.items() }
+    # if unfulfilled shipments
+    if len( need_shipped ) > 0:
+        yield [ ( "t_reset_order_status" ), ( "mg_plan_for_goals", multigoal ) ]
+
+methods.declare_multigoal_methods( "mg_plan", [ mgm_plan ] )
+
+def tm_reset_order_status_0( state ):
+    started = state.started
+    shipped = state.shipped
+    rigid = state.rigid
+    type_dict = rigid[ "type_dict" ]
+    orders = type_dict[ "order" ]
+    # reset all orders that are started but not shipped recursively
+    for o in orders:
+        if started[ o ] and not shipped[ o ]:
+            yield [ ( "reset", o ), ( "t_reset_order_status" ) ]
+
+def tm_reset_order_status_1( state ):
+    started = state.started
+    # end reset recursion
+    if not any( started.values() ):
+        yield [ ]
+
+methods.declare_task_methods( "t_reset_order_status", [ tm_reset_order_status_0, tm_reset_order_status_1 ] )
+
+def mgm_plan_for_goals_0( state, multigoal ):
+    has_shipped = { *state.shipped.items() }
+    want_shipped = { *multigoal.shipped.items() }
+    need_shipped = want_shipped - has_shipped
+    # recursively ship orders
+    if len( need_shipped ) > 0:
+        yield [ ( "t_one_step" ), ( "mg_plan_for_goals", multigoal ) ]
+
+def mgm_plan_for_goals_1( state, multigoal ):
+    has_shipped = { *state.shipped.items() }
+    want_shipped = { *multigoal.shipped.items() }
+    need_shipped = want_shipped - has_shipped
+    # end recursion
+    if len( need_shipped ) == 0:
+        yield [ ]
+
+methods.declare_multigoal_methods( "mg_plan_for_goals", [ mgm_plan_for_goals_0, mgm_plan_for_goals_1 ] )
+
+def tm_one_step_0( state ):
+    shipped = state.shipped
+    rigid = state.rigid
+    includes = rigid[ "includes" ]
+    made = state.made
+    started = state.started
+    type_dict = rigid[ "type_dict" ]
+    orders = type_dict[ "order" ]
+    # ship order that has not shipped, is ready to ship, and is started
+    for o in orders:
+        if not( shipped[ o ] ) and started[ o ] and ready_to_ship( includes, made, o ):
+            yield [ ( "shipped", o, True ) ]
+
+def tm_one_step_1( state ):
+    shipped = state.shipped
+    rigid = state.rigid
+    includes = rigid[ "includes" ]
+    made = state.made
+    started = state.started
+    type_dict = rigid[ "type_dict" ]
+    orders = type_dict[ "order" ]
+    stacks_open = state.stacks_open
+    max_stacks = rigid[ "max_stacks" ]
+    # repair order if needed and possible
+    if stacks_open < max_stacks:
+        for o in orders:
+            if not( shipped[ o ] ) and not( started[ o ] ) and ready_to_ship( includes, made, o ):
+                yield [ ( 'start_order', o ) ]
+
+def tm_one_step_2( state ):
+    shipped = state.shipped
+    rigid = state.rigid
+    includes = rigid[ "includes" ]
+    made = state.made
+    started = state.started
+    type_dict = rigid[ "type_dict" ]
+    orders = type_dict[ "order" ]
+    # make a product for an order that has not shipped and is not ready to ship
+    for o in orders:
+        if not( shipped[ o ] ) and not( ready_to_ship( includes, made, o ) ):
+            yield [ ( "t_make_a_product" ) ]
+
+methods.declare_task_methods( "t_one_step", [ tm_one_step_0, tm_one_step_1, tm_one_step_2 ] )
 
 def tm_make_a_product( state ):
     rigid = state.rigid
@@ -54,16 +152,16 @@ def tm_make_a_product( state ):
         included_products = includes[ o ]
         unmade_products = { *filter( lambda x: not( made[ x ] ), included_products ) }
         valid_products.union( unmade_products )
-    if len( valid_products ) == 0:
-        return
     # sort products by ship cost heuristic
     valid_products = [ *valid_products ]
     valid_products.sort( key=lambda x:ship_cost_heuristic( included_in, started, includes, x ) )
-    return [ ( "tm_make_product", valid_products[ 0 ] ) ]
+    for v_p in valid_products:
+        yield [ ( "made", v_p, True ) ]
 
-def tm_ship_an_order( state, o ):
+methods.declare_task_methods( "t_make_a_product", [ tm_make_a_product ] )
+
+def gm_ship_an_order( state, o ):
     rigid = state.rigid
-    type_dict = rigid[ "type_dict" ]
     shipped = state.shipped
     includes = rigid[ "includes" ]
     made = state.made
@@ -71,43 +169,56 @@ def tm_ship_an_order( state, o ):
     # o is not shipped
     # all p that o includes are made
     # there exists an open stack
-    if all( [
-        type_check( [ o ], [ "order" ], type_dict ),
-        not( shipped[ o ] ),
-        all( [ made[ p ] for p in includes[ o ] ] ),
-    ] ):
-        return [ ( "ship_order", o ) ]
+    if not( shipped[ o ] ) and ready_to_ship( includes, made, o ):
+        yield [ ( "ship_order", o ) ]
 
-def tm_make_product( state, p ):
-    return [ ( "tm_start_orders", p ), ( "make_product", p ) ]
+methods.declare_goal_methods( "shipped", [ gm_ship_an_order ] )
 
-def tm_start_orders( state, p ):
+def gm_make_product( state, p ):
+    yield [ ( "t_start_orders", p ), ( "make_product", p ) ]
+
+methods.declare_goal_methods( "made", [ gm_make_product ] )
+
+def tm_start_orders_0( state, p ):
     rigid = state.rigid
     included_in = rigid[ "included_in" ]
     started = state.started
     # start all orders that include p that are not started
     include_p_orders = included_in[ p ]
-    unstarted_orders = filter( lambda x: started[ x ], include_p_orders )
-    return [ ( "tm_start_an_order", o ) for o in unstarted_orders ]
+    for o in include_p_orders:
+        if not( started[ o ] ):
+            yield [ ( "started", o, True ), ( "t_start_orders", p ) ]
 
-def start_an_order( state, o ):
+def tm_start_orders_1( state, p ):
+    rigid = state.rigid
+    included_in = rigid[ "included_in" ]
+    started = state.started
+    # start all orders that include p that are not started
+    include_p_orders = included_in[ p ]
+    if all( [ started[ o ] for  o in include_p_orders ] ):
+        yield [ ]
+
+methods.declare_task_methods( "t_start_orders", [ tm_start_orders_0, tm_start_orders_1 ] )
+
+def start_an_order_for( state, p, o ):
     rigid = state.rigid
     max_stacks = rigid[ "max_stacks" ]
     open_stacks = state.open_stacks
-    if open_stacks < max_stacks:
+    includes = rigid[ "includes" ]
+    started = state.started
+    if not( started[ o ] )  and open_stacks < max_stacks and p in includes[ o ]:
         return [ ( "start_order", o ) ]
+
+methods.declare_goal_methods( "started", [ start_an_order_for ] )
 
 def ship_products( state, o ):
     open_stacks = state.open_stacks
     if open_stacks > 0:
         return [ ( "ship_order", o ) ]
 
+methods.declare_goal_methods( "shipped", [ ship_products ] )
 
 
-# Create a IPyHOP Methods object. A Methods object stores all the methods defined for the planning domain.
-methods = Methods()
-
-methods.declare_task_methods( "make_product", [ ] )
 
 
 """
