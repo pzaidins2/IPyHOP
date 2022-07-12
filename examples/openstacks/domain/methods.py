@@ -207,14 +207,14 @@ def start_an_order_for( state, p, o ):
     includes = rigid[ "includes" ]
     started = state.started
     if not( started[ o ] )  and open_stacks < max_stacks and p in includes[ o ]:
-        return [ ( "start_order", o ) ]
+        yield [ ( "start_order", o ) ]
 
 methods.declare_goal_methods( "started", [ start_an_order_for ] )
 
 def ship_products( state, o ):
     open_stacks = state.open_stacks
     if open_stacks > 0:
-        return [ ( "ship_order", o ) ]
+        yield [ ( "ship_order", o ) ]
 
 methods.declare_goal_methods( "shipped", [ ship_products ] )
 

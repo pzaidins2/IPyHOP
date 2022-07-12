@@ -527,6 +527,7 @@ class IPyHOP(object):
                 c_node['state'] = None
                 c_node['selected_method'] = None
                 c_node['available_methods'] = [*c_node['methods']]
+                c_node[ "selected_method_instances" ] = None
                 descendant_list = list(descendants(self.sol_tree, node_id))
                 self.sol_tree.remove_nodes_from(descendant_list)
 
@@ -550,6 +551,7 @@ class IPyHOP(object):
             c_node['state'] = None
             c_node['selected_method'] = None
             c_node['available_methods'] = [*c_node['methods']]
+            c_node[ "selected_method_instances" ] = None
 
         dfs_list = list(dfs_preorder_nodes(self.sol_tree, source=p_node_id))
         for node_id in reversed(dfs_list):

@@ -88,6 +88,11 @@ def ship_order( state, o ):
             state.stacks_open -= 1
             return state
 
+def reset( state, o ):
+    started = state.started
+    shipped = state.shipped
+    # waiting?
+    pass
 
 
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.

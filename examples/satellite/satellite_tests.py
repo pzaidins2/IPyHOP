@@ -28,17 +28,19 @@ def run_experiment( i, j, k, problem_file_path ):
     actor = Actor( planner, mc_executor )
 
     # planning and acting
-    start_time = time.process_time()
-    history = actor.complete_to_do( state_0, [ goal_a ] )
-    time_elapsed = time.process_time() - start_time
-
-    # metrics
-    iteration_count = planner.iterations
-    cpu_time = time_elapsed
-    action_count = len( history )
-    print( ( ( i, j, k ), ( iteration_count, cpu_time, action_count )  ) )
-    return ( ( i, j, k ), ( iteration_count, cpu_time, action_count )  )
-
+    try:
+        start_time = time.process_time()
+        history = actor.complete_to_do( state_0, [ goal_a ] )
+        time_elapsed = time.process_time() - start_time
+        # metrics
+        iteration_count = planner.iterations
+        cpu_time = time_elapsed
+        action_count = len( history )
+        print( ( ( i, j, k ), ( iteration_count, cpu_time, action_count )  ) )
+        return ( ( i, j, k ), ( iteration_count, cpu_time, action_count )  )
+    except:
+        print( "\nEXCEPTION OCCURRED: " + str( ( i, j, k ) ) + "\n" )
+        return ( ( i, j, k ), ( -1, -1, -1 ) )
 def main():
     problem_file_names = filter( lambda x: "pddl" in x, os.listdir( "problems" ) )
     problem_paths = [ "problems/" + x for x in problem_file_names ]

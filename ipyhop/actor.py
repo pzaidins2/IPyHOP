@@ -10,6 +10,7 @@ from ipyhop.actions import Actions
 from ipyhop.planner import IPyHOP
 from ipyhop.planner_old import IPyHOP_Old
 from ipyhop.mc_executor import MonteCarloExecutor
+from networkx import dfs_preorder_nodes
 import numpy as np
 
 
@@ -74,7 +75,18 @@ class Actor:
                 assert plan[ exec_index ] == action_list[ action_index ]
                 # replan
                 curr_state = state_list[ -2 ]
-                plan, exec_index = self.planner.replan( curr_state, exec_index, verbose )
+                if type( self.planner ) == IPyHOP:
+                    plan, exec_index = self.planner.replan( curr_state, exec_index, verbose )
+                # OLD PLANNER MAY STRUGGLE WITH IDENTICAL ACTIONS
+                elif type( self.planner ) == IPyHOP_Old:
+                    fail_node_info = action_list[ action_index ]
+                    for node_id in dfs_preorder_nodes( self.planner.sol_tree, source=0 ):
+                        if self.planner.sol_tree.nodes[ node_id ][ "info" ] == fail_node_info:
+                            fail_node_id = node_id
+                    plan = self.planner.replan( curr_state, fail_node_id, verbose )
+                    exec_index = 0
+                else:
+                    raise( "Invalid Planner" )
                 if plan[ exec_index: ] == []:
                     plan_impossible = True
                     if verbose >= 1:

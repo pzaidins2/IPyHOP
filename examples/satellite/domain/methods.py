@@ -23,47 +23,59 @@ N = 1
 methods = Methods()
 
 def mgm_main( state, multigoal ):
-
-    state_have_image = { *state.have_image.items() }
-    mg_have_image = { *multigoal.have_image.items() }
+    state_have_image = state.have_image
+    mg_have_image = multigoal.have_image
     # get have_image goal that is not fulfilled
-    diff_have_image = mg_have_image - state_have_image
-    for g_have_image in diff_have_image:
-        yield [ ("have_image", g_have_image[ 0 ], True), multigoal ]
+    for g_image in mg_have_image.keys():
+        if not state_have_image[ g_image ]:
+            yield [ ("have_image", g_image, True), multigoal ]
 
-    pointing = state.pointing
-    state_pointing = { *pointing.items() }
-    mg_pointing = { *multigoal.pointing.items() }
+    state_pointing = state.pointing
+    mg_pointing = multigoal.pointing
     # get pointing goal that is not fulfilled
-    diff_pointing = mg_pointing - state_pointing
-    for g_pointing in diff_pointing:
-        s = g_pointing[ 0 ]
-        d_new = g_pointing[ 1 ]
-        d_prev = pointing[ s ]
-        yield [ ("turn_to", s, d_new, d_prev), multigoal ]
+    print( mg_pointing.items( ))
+    for s, mg_d in mg_pointing.items():
+        state_d = state_pointing[ s ]
+        if state_d != mg_d:
+            yield [ ( "turn_to", s, mg_d, state_d ), multigoal ]
 
     # end when all pointing and have_image goals are fufilled
-    if len( diff_have_image ) == 0 and len( diff_pointing ) == 0:
+    if ( len( { *mg_have_image.items() } - { *state_have_image.items() } ) == 0 and
+            len( { *mg_pointing.items() } - { *state_pointing.items() } ) == 0 ):
         yield [ ]
 
 
 def mgm_main_0( state, multigoal ):
-    state_have_image = { *state.have_image.items() }
-    mg_have_image = { *multigoal.have_image.items() }
+    # state_have_image = { *state.have_image.items() }
+    # mg_have_image = { *multigoal.have_image.items() }
+    # # get have_image goal that is not fulfilled
+    # for g_have_image in mg_have_image - state_have_image:
+    #     yield [ ( "have_image", g_have_image[ 0 ], True ), multigoal ]
+    state_have_image = state.have_image
+    mg_have_image = multigoal.have_image
     # get have_image goal that is not fulfilled
-    for g_have_image in mg_have_image - state_have_image:
-        yield [ ( "have_image", g_have_image[ 0 ], True ), multigoal ]
+    for g_image in mg_have_image.keys():
+        if not state_have_image[ g_image ]:
+            yield [ ("have_image", g_image, True), multigoal ]
 
 def mgm_main_1( state, multigoal ):
-    pointing = state.pointing
-    state_pointing = { *pointing.items() }
-    mg_pointing = { *multigoal.pointing.items() }
+    # pointing = state.pointing
+    # state_pointing = { *pointing.items() }
+    # mg_pointing = { *multigoal.pointing.items() }
+    # # get pointing goal that is not fulfilled
+    # for g_pointing in mg_pointing - state_pointing:
+    #     s = g_pointing[ 0 ]
+    #     d_new = g_pointing[ 1 ]
+    #     d_prev = pointing[ s ]
+    #     yield [ ( "turn_to", s, d_new, d_prev ), multigoal ]
+    state_pointing = state.pointing
+    mg_pointing = multigoal.pointing
     # get pointing goal that is not fulfilled
-    for g_pointing in mg_pointing - state_pointing:
-        s = g_pointing[ 0 ]
-        d_new = g_pointing[ 1 ]
-        d_prev = pointing[ s ]
-        yield [ ( "turn_to", s, d_new, d_prev ), multigoal ]
+    for s in mg_pointing.keys():
+        mg_d = mg_pointing[ s ]
+        state_d = state_pointing[ s ]
+        if state_d != mg_d:
+            yield [ ( "turn_to", s, mg_d, state_d ), multigoal ]
 
 def mgm_main_2( state, multigoal ):
     pointing = state.pointing
@@ -71,7 +83,7 @@ def mgm_main_2( state, multigoal ):
     mg_pointing = { *multigoal.pointing.items() }
     state_have_image = { *state.have_image.items() }
     mg_have_image = { *multigoal.have_image.items() }
-    # end when all pointing and have_image goals are fufilled
+    # end when all pointing and have_image goals are fulfilled
     if len( mg_pointing - state_pointing ) == 0 and len( mg_have_image - state_have_image ) == 0:
         yield []
 

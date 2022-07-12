@@ -8,6 +8,7 @@ from examples.satellite.domain.actions import actions
 from examples.satellite.domain.methods import methods
 from examples.satellite.domain.deviations import deviation_handler
 from ipyhop import IPyHOP, State
+from ipyhop.planner_old import IPyHOP_Old
 from ipyhop.mulitgoal import MultiGoal
 from ipyhop.actor import Actor
 from ipyhop.mc_executor import MonteCarloExecutor
@@ -148,7 +149,7 @@ def main():
         state_0, goal_a =  init_sat( problem_str )
         mc_executor = MonteCarloExecutor( actions, deviation_handler )
         actor = Actor( planner, mc_executor )
-        history = actor.complete_to_do( state_0, [ goal_a ], verbose=2 )
+        history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
 
 # ******************************************        Main Program End        ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #

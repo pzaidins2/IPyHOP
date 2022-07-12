@@ -368,7 +368,7 @@ class IPyHOP_Old(object):
                 if self.sol_tree.nodes[node_id]['tag'] == 'new':
                     self.sol_plan.append(self.sol_tree.nodes[node_id]['info'])
 
-        return self.sol_plan, 0
+        return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _add_nodes_and_edges(self, _id: int, parent_node_id: int, children_node_info_list: List[Tuple[str]]):
@@ -452,6 +452,7 @@ class IPyHOP_Old(object):
             c_node['state'] = None
             c_node['selected_method'] = None
             c_node['available_methods'] = [ *c_node[ 'methods' ] ]
+            c_node[ "selected_method_instances" ] = None
 
         dfs_list = list(dfs_preorder_nodes(self.sol_tree, source=p_node_id))
         for node_id in reversed(dfs_list):
