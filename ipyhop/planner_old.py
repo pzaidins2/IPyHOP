@@ -87,6 +87,7 @@ class IPyHOP_Old(object):
             print(run_info.format(verbosity=self._verbose, state=self.state.__name__, task_list=task_list))
 
         self.sol_plan = []
+        plan_node_ids = []
         self.sol_tree = DiGraph()
 
         _id = 0
@@ -100,7 +101,8 @@ class IPyHOP_Old(object):
         # Store the planning solution as a list of actions to be executed.
         for node_id in dfs_preorder_nodes(self.sol_tree, source=0):
             if self.sol_tree.nodes[node_id]['type'] == 'A':
-                self.sol_plan.append(self.sol_tree.nodes[node_id]['info'])
+                self.sol_plan.append( self.sol_tree.nodes[node_id]["info"] )
+                plan_node_ids.append( node_id )
         return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
@@ -361,13 +363,14 @@ class IPyHOP_Old(object):
         assert is_tree(self.sol_tree), "Error! Solution graph is not a tree."
 
         self.sol_plan = []
+        plan_node_ids = []
         # Store the planning solution as a list of actions to be executed.
         for node_id in dfs_preorder_nodes(self.sol_tree, source=0):
             if self.sol_tree.nodes[node_id]['type'] == 'A':
                 if self.sol_tree.nodes[node_id]['tag'] == 'new':
-                    self.sol_plan.append(self.sol_tree.nodes[node_id]['info'])
-
-        return self.sol_plan
+                    self.sol_plan.append( self.sol_tree.nodes[node_id]['info']  )
+                    plan_node_ids.append( node_id )
+        return self.sol_plan, plan_node_ids
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _add_nodes_and_edges(self, _id: int, parent_node_id: int, children_node_info_list: List[Tuple[str]]):

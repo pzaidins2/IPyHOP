@@ -101,7 +101,8 @@ class IPyHOP(object):
         # Store the planning solution as a list of actions to be executed.
         for node_id in dfs_preorder_nodes(self.sol_tree, source=0):
             if self.sol_tree.nodes[node_id]['type'] == 'A':
-                self.sol_plan.append(self.sol_tree.nodes[node_id]['info'])
+                self.sol_plan.append( self.sol_tree.nodes[node_id]['info'] )
+
         # print(self.sol_tree.nodes[0])
         return self.sol_plan
 
@@ -465,7 +466,9 @@ class IPyHOP(object):
                 continue
             # plan worked
             break
+
         plan = [ sol_tree.nodes[ x ][ "info" ] for x in plan ]
+
         self.sol_plan = plan
         return plan, exec_plan_index
         # return self.sol_plan

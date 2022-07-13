@@ -31,7 +31,7 @@ def deviation_handler( act_tuple, state ):
     deviation_operators = [
         d_change_direction,
         d_decalibration,
-        d_power_loss
+        # d_power_loss
     ]
     d_operator = random.choice( deviation_operators )
     return d_operator( state )

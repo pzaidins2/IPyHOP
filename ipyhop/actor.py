@@ -77,16 +77,19 @@ class Actor:
                 curr_state = state_list[ -2 ]
                 if type( self.planner ) == IPyHOP:
                     plan, exec_index = self.planner.replan( curr_state, exec_index, verbose )
-                # OLD PLANNER MAY STRUGGLE WITH IDENTICAL ACTIONS
                 elif type( self.planner ) == IPyHOP_Old:
-                    fail_node_info = action_list[ action_index ]
-                    for node_id in dfs_preorder_nodes( self.planner.sol_tree, source=0 ):
-                        if self.planner.sol_tree.nodes[ node_id ][ "info" ] == fail_node_info:
-                            fail_node_id = node_id
-                    plan = self.planner.replan( curr_state, fail_node_id, verbose )
+                    if not did_replan:
+                        preorder_action_nodes = [ *filter( lambda x: self.planner.sol_tree.nodes[ x ][ "type" ] == "A",
+                                                       dfs_preorder_nodes( self.planner.sol_tree, source=0 ) ) ]
+                        fail_node_id = preorder_action_nodes[ exec_index ]
+                    else:
+                        fail_node_id = plan_node_ids[ exec_index  ]
+                    assert self.planner.sol_tree.nodes[ fail_node_id ][ "info" ] == action_list[ action_index ]
+                    plan, plan_node_ids = self.planner.replan( curr_state, fail_node_id, verbose )
                     exec_index = 0
                 else:
                     raise( "Invalid Planner" )
+                did_replan = True
                 if plan[ exec_index: ] == []:
                     plan_impossible = True
                     if verbose >= 1:
