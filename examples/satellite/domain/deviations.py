@@ -28,7 +28,11 @@ import random
 
 # satellite deviation handler
 def deviation_handler( act_tuple, state ):
-    deviation_operators = [ d_change_direction, d_decalibration, d_power_loss ]
+    deviation_operators = [
+        d_change_direction,
+        d_decalibration,
+        d_power_loss
+    ]
     d_operator = random.choice( deviation_operators )
     return d_operator( state )
 
@@ -65,6 +69,7 @@ def d_decalibration( state ):
         state.calibrated[ decalibrated_instrument ] = False
     return state
 
+# CAUSES ITERATION EXPLOSION IN OLD PLANNER
 # cause random powered instrument to lose power
 def d_power_loss( state ):
     rigid = state.rigid

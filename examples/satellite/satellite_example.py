@@ -134,22 +134,22 @@ def init_sat( pddl_str ):
     return state_0, goal_a
 # ******************************************        Main Program Start       ***************************************** #
 def main():
-    # while True:
-    for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
-    #     problem_file_name = "problems/p05.pddl"
-        if "pddl" not in problem_file_name:
-            continue
-        print( problem_file_name )
-    # problem_file_name = "problems/p20.pddl"
-        problem_file = open( problem_file_name, "r" )
-        problem_str = problem_file.read()
-        problem_file.close()
+    while True:
+        for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
+        #     problem_file_name = "problems/p05.pddl"
+            if "pddl" not in problem_file_name:
+                continue
+            print( problem_file_name )
+        # problem_file_name = "problems/p20.pddl"
+            problem_file = open( problem_file_name, "r" )
+            problem_str = problem_file.read()
+            problem_file.close()
 
-        planner = IPyHOP( methods, actions )
-        state_0, goal_a =  init_sat( problem_str )
-        mc_executor = MonteCarloExecutor( actions, deviation_handler )
-        actor = Actor( planner, mc_executor )
-        history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
+            planner = IPyHOP_Old( methods, actions )
+            state_0, goal_a =  init_sat( problem_str )
+            mc_executor = MonteCarloExecutor( actions, deviation_handler )
+            actor = Actor( planner, mc_executor )
+            history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
 
 # ******************************************        Main Program End        ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #

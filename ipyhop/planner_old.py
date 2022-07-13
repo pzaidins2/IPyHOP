@@ -357,7 +357,6 @@ class IPyHOP_Old(object):
 
         max_id = self._post_failure_modify(fail_node_id)
         parent_node_id, curr_node_id = self._backtrack(list(self.sol_tree.predecessors(fail_node_id))[0], fail_node_id)
-
         self.iterations += self._planning(max_id, parent_node_id)
         assert is_tree(self.sol_tree), "Error! Solution graph is not a tree."
 

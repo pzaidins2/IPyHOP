@@ -33,7 +33,6 @@ def mgm_main( state, multigoal ):
     state_pointing = state.pointing
     mg_pointing = multigoal.pointing
     # get pointing goal that is not fulfilled
-    print( mg_pointing.items( ))
     for s, mg_d in mg_pointing.items():
         state_d = state_pointing[ s ]
         if state_d != mg_d:

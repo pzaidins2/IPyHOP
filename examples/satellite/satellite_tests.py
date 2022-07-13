@@ -64,12 +64,12 @@ def main():
                 break
             print( str( round( 100 - 100 * output._number_left / len( args ), 3 ) ) + " %" )
             time.sleep( 60 )
-    for exp in output:
+    for exp in output.get():
         metrics[ exp[ 0 ] ] = np.asarray( exp[1] )
 
     new_iteration_count = metrics[ 0, :, :, 0 ]
     new_cpu_time = metrics[ 0, :, :, 1 ]
-    new_action_count = metrics[ 0 :, :, 2 ]
+    new_action_count = metrics[ 0, :, :, 2 ]
     old_iteration_count = metrics[ 1, :, :, 0 ]
     old_cpu_time = metrics[ 1, :, :, 1 ]
     old_action_count = metrics[ 1, :, :, 2 ]
@@ -108,12 +108,14 @@ def main():
     old_err_cpu_time = np.std( old_cpu_time, axis=0 ) / np.sqrt( N )
     old_err_action_count = np.std( old_action_count, axis=0 ) / np.sqrt( N )
 
-    x = [ i + 1 for i in range( M ) ]
+    x = np.asarray( [ i + 1 for i in range( M ) ] )
 
     print( new_iteration_count )
     bar_width = 0.4
     plt.figure(0)
     plt.subplot( 3, 1, 1 )
+    title = "3% Failure Rate"
+    plt.title( title )
     plt.bar( x, new_mean_iteration_count, yerr=new_err_iteration_count, width=bar_width, label="new" )
     plt.bar( x + bar_width, old_mean_iteration_count, yerr=old_err_iteration_count, width=bar_width, label="old"  )
     # plt.xlabel( "Problem #" )
@@ -133,6 +135,7 @@ def main():
     plt.xlabel( "Problem #" )
     plt.ylabel( "Action Count" )
     plt.legend()
+    plt.savefig( title + ".png")
     plt.show()
 
 
