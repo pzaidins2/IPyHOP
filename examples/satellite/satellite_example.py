@@ -14,6 +14,7 @@ from ipyhop.actor import Actor
 from ipyhop.mc_executor import MonteCarloExecutor
 import re
 import os
+from functools import partial
 
 # ******************************************        Helper Functions        ****************************************** #
 
