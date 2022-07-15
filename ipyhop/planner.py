@@ -418,21 +418,21 @@ class IPyHOP(object):
             # propagate expansion downward, backtracking if needed but never higher than current node
             if node[ "available_methods" ] != []:
                 self.state = true_state
-                _iter, exec_id = self._planning(parent_id ,verbose=verbose)
+                _iter, exec_id = self._planning(node_id ,verbose=verbose)
                 self.iterations += _iter
             # deadend move up
             else:
                 # check if root is reached
-                if parent_id == 0:
-                    break
+                # if parent_id == 0:
+                #     break
                 # if so return to previous node on stack else continue traversing up
                 prev_node = node_id_stack[ 1 ] if len( node_id_stack ) > 1 else None
                 grandparent_id = next( sol_tree.predecessors( parent_id ) )
                 # do this to prevent altering precondition guarantees
                 # that is we have gone far enough up the tree that the previous node will be orphaned by repair
                 if prev_node in descendants( sol_tree, grandparent_id ):
-                    node_id_stack.pop()
-                    state_stack.pop()
+                    node_id_stack.pop(0)
+                    state_stack.pop(0)
                 continue
 
             # get new plan
@@ -456,21 +456,19 @@ class IPyHOP(object):
             # simulate new plan from current point
             # print("STATE")
             # print(true_state)
-            sim_states = self.simulate( true_state )
+            act_plan = [ sol_tree.nodes[ x ][ "info" ] for x in plan ]
+            sim_state, sim_index = self.simulate_no_copy( true_state, act_plan, exec_plan_index )
 
             # if a problem occurs put state at failure and attempted node on stack
-            if sim_states[-1] == None:
-                index = len( sim_states ) - 1
-                state_stack.insert( 0, sim_states[ index - 1 ] )
-                node_id_stack.insert( 0, plan[ index ] )
+            if sim_index != len( plan ) - 1:
+                state_stack.insert( 0, sim_state )
+                node_id_stack.insert( 0, next( sol_tree.predecessors( plan[ sim_index ] ) ) )
                 continue
             # plan worked
             break
 
-        plan = [ sol_tree.nodes[ x ][ "info" ] for x in plan ]
-
-        self.sol_plan = plan
-        return plan, exec_plan_index
+        self.sol_plan = act_plan
+        return act_plan, exec_plan_index
         # return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
@@ -608,6 +606,22 @@ class IPyHOP(object):
             state_list.append(state_copy.copy())
         return state_list
 
+    def simulate_no_copy(self, state: State, act_plan: List[Tuple], start_ind=0) -> List:
+        """
+        Simulates the generated plan on the given state without keeping intermediate states
+
+        :param state: An instance of State class containing the collection of variable bindings representing
+            the current in the planning problem.
+        :param start_ind: An integer specifying the index of the command in the generated plan to simulate from.
+        :return: last state not None and index in plan where this occured
+        """
+        prev_state = state.copy()
+        curr_state = prev_state
+        for i, action in enumerate( act_plan[ start_ind: ] ):
+            curr_state = self.actions.action_dict[action[0]](prev_state, *action[1:])
+            if curr_state == None:
+                return ( prev_state, start_ind + i )
+        return ( curr_state, len( act_plan ) - 1 )
     # ******************************        Class Method Declaration        ****************************************** #
     def blacklist_command(self, command: Tuple):
         """

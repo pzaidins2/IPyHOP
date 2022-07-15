@@ -39,6 +39,7 @@ class Actor:
         history = []
         # find plan to complete to_do_list
         plan = self.planner.plan(initial_state, to_do_list, verbose=verbose)
+
         # print( self.planner.iterations )
         if verbose >= 1:
             print("Initial plan created\n")
@@ -57,6 +58,11 @@ class Actor:
             # unzip list of tuples into seperate lists
             action_list, state_list = [ *zip( *exec_result ) ]
             # if no state is None plan executed successfully
+            if type( self.planner ) == IPyHOP_Old and plan == [ ]:
+                plan_impossible = True
+                if verbose >= 1:
+                    print( "No plan is possible..." )
+                break
             if state_list[ -1 ] != None:
                 plan_success = True
                 history += [ *action_list[ 1: ] ]
@@ -90,7 +96,7 @@ class Actor:
                 else:
                     raise( "Invalid Planner" )
                 did_replan = True
-                if plan[ exec_index: ] == []:
+                if self.planner.sol_tree.nodes[ 0 ][ "status" ] == "O":
                     plan_impossible = True
                     if verbose >= 1:
                         print( "No plan is possible...")

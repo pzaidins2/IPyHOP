@@ -19,7 +19,7 @@ from functools import partial
 # ******************************************        Helper Functions        ****************************************** #
 
 # create sat pyhop problem
-def init_sat( pddl_str ):
+def init_sat( pddl_str, actions, methods, deviation_handler ):
     # create intial state
     state_0 = State("state_0")
     object_re = re.compile("(\w+) - (\w+)")
@@ -33,16 +33,16 @@ def init_sat( pddl_str ):
     # unique entities
     object_list = object_re.findall(pddl_str)
     state_dict = dict()
-    state_0.rigid = dict()
-    state_0.rigid[ "type_dict" ] = dict()
+    rigid = dict()
+    rigid[ "type_dict" ] = dict()
     state_dict["satellite"] = set()
-    state_0.rigid[ "type_dict" ][ "satellite" ] = state_dict["satellite"]
+    rigid[ "type_dict" ][ "satellite" ] = state_dict["satellite"]
     state_dict["instrument"] = set()
-    state_0.rigid[ "type_dict" ][ "instrument" ] = state_dict["instrument"]
+    rigid[ "type_dict" ][ "instrument" ] = state_dict["instrument"]
     state_dict["mode"] = set()
-    state_0.rigid[ "type_dict" ][ "mode" ] = state_dict["mode"]
+    rigid[ "type_dict" ][ "mode" ] = state_dict["mode"]
     state_dict["direction"] = set()
-    state_0.rigid[ "type_dict" ][ "direction" ] = state_dict["direction"]
+    rigid[ "type_dict" ][ "direction" ] = state_dict["direction"]
     for object, obj_cat in object_list:
         state_dict[obj_cat].add(object)
     # initial state
@@ -52,11 +52,11 @@ def init_sat( pddl_str ):
     dict_rel_list = dict_rel_re.findall(init_str)
     # print
     state_dict[ "supports" ] = dict()
-    state_0.rigid[ "supports" ] = state_dict["supports"]
+    rigid[ "supports" ] = state_dict["supports"]
     state_dict["on_board" ] = dict()
-    state_0.rigid[ "on_board" ] = state_dict["on_board"]
+    rigid[ "on_board" ] = state_dict["on_board"]
     state_dict["calibration_target"] = dict()
-    state_0.rigid[ "calibration_target" ] = state_dict["calibration_target"]
+    rigid[ "calibration_target" ] = state_dict["calibration_target"]
     state_dict["pointing"] = dict()
     state_0.pointing = state_dict["pointing"]
     state_dict["have_image"] = dict()
@@ -132,7 +132,16 @@ def init_sat( pddl_str ):
                 state_dict[ "have_image" ][ ( k, v ) ] = False
         else:
             goal_dict[ rel ][ k ] = v
-    return state_0, goal_a
+    # rigid never needs to be copied so avoid this by partial evaluation of actions, methods, and deviation_handler that take rigid
+    methods.goal_method_dict.update( 
+        { l: [ partial( m, rigid=rigid ) for m in  ms ] for l, ms in methods.goal_method_dict.items() } )
+    methods.task_method_dict.update( 
+        { l: [ partial( m, rigid=rigid ) for m in ms ] for l, ms in methods.task_method_dict.items() } )
+    methods.multigoal_method_dict.update(
+        { l: [ partial( m, rigid=rigid ) for m in ms ] for l, ms in methods.multigoal_method_dict.items() } )
+    actions.action_dict.update( { l: partial( a, rigid=rigid ) for l, a in actions.action_dict.items() } )
+    deviation_handler = partial( deviation_handler, rigid=rigid )
+    return state_0, goal_a, deviation_handler
 # ******************************************        Main Program Start       ***************************************** #
 def main():
     while True:
@@ -141,14 +150,14 @@ def main():
             if "pddl" not in problem_file_name:
                 continue
             print( problem_file_name )
-        # problem_file_name = "problems/p20.pddl"
+    #         problem_file_name = "problems/p11.pddl"
             problem_file = open( problem_file_name, "r" )
             problem_str = problem_file.read()
             problem_file.close()
 
             planner = IPyHOP_Old( methods, actions )
-            state_0, goal_a =  init_sat( problem_str )
-            mc_executor = MonteCarloExecutor( actions, deviation_handler )
+            state_0, goal_a, dev_hand=  init_sat( problem_str, actions, methods, deviation_handler )
+            mc_executor = MonteCarloExecutor( actions, dev_hand )
             actor = Actor( planner, mc_executor )
             history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
 

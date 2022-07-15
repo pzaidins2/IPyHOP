@@ -25,8 +25,7 @@ The state is described with following properties:
 from ipyhop import Actions
 from typing import List, Dict, Set
 
-def turn_to( state, s, d_new, d_prev ):
-    rigid = state.rigid
+def turn_to( state, s, d_new, d_prev, rigid ):
     type_dict = rigid[ "type_dict" ]
     pointing = state.pointing
     # type check
@@ -43,8 +42,7 @@ def turn_to( state, s, d_new, d_prev ):
             state.pointing[ s ] = d_new
             return state
 
-def switch_on( state, i, s ):
-    rigid = state.rigid
+def switch_on( state, i, s, rigid ):
     type_dict = rigid[ "type_dict" ]
     on_board = rigid[ "on_board" ]
     power_avail = state.power_avail
@@ -67,8 +65,7 @@ def switch_on( state, i, s ):
             state.power_avail[ s ] = False
             return state
 
-def switch_off( state, i, s ):
-    rigid = state.rigid
+def switch_off( state, i, s, rigid ):
     type_dict = rigid[ "type_dict" ]
     on_board = rigid[ "on_board" ]
     power_on = state.power_on
@@ -89,8 +86,7 @@ def switch_off( state, i, s ):
             state.power_avail[ s ] = True
             return state
 
-def calibrate( state, s, i, d ):
-    rigid = state.rigid
+def calibrate( state, s, i, d, rigid ):
     type_dict = rigid[ "type_dict" ]
     on_board = rigid[ "on_board" ]
     power_on = state.power_on
@@ -118,8 +114,7 @@ def calibrate( state, s, i, d ):
             state.calibrated[ i ] = True
             return state
 
-def take_image( state, s, d, i, m ):
-    rigid = state.rigid
+def take_image( state, s, d, i, m, rigid ):
     type_dict = rigid[ "type_dict" ]
     on_board = rigid[ "on_board" ]
     calibrated = state.calibrated
@@ -161,7 +156,7 @@ action_probability = {
     "switch_on": [ 1, 0 ],
     "switch_off": [ 1, 0 ],
     "calibrate": [ 1, 0 ],
-    "take_image": [ 0.6, 0.4 ]
+    "take_image": [ 0.8, 0.2 ]
 }
 
 action_cost = {

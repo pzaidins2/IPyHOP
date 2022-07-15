@@ -22,7 +22,7 @@ N = 1
 # Create a IPyHOP Methods object. A Methods object stores all the methods defined for the planning domain.
 methods = Methods()
 
-def mgm_main( state, multigoal ):
+def mgm_main( state, multigoal, rigid ):
     state_have_image = state.have_image
     mg_have_image = multigoal.have_image
     # get have_image goal that is not fulfilled
@@ -44,7 +44,7 @@ def mgm_main( state, multigoal ):
         yield [ ]
 
 
-def mgm_main_0( state, multigoal ):
+def mgm_main_0( state, multigoal, rigid ):
     # state_have_image = { *state.have_image.items() }
     # mg_have_image = { *multigoal.have_image.items() }
     # # get have_image goal that is not fulfilled
@@ -57,7 +57,7 @@ def mgm_main_0( state, multigoal ):
         if not state_have_image[ g_image ]:
             yield [ ("have_image", g_image, True), multigoal ]
 
-def mgm_main_1( state, multigoal ):
+def mgm_main_1( state, multigoal, rigid ):
     # pointing = state.pointing
     # state_pointing = { *pointing.items() }
     # mg_pointing = { *multigoal.pointing.items() }
@@ -88,9 +88,9 @@ def mgm_main_2( state, multigoal ):
 
 methods.declare_multigoal_methods( None, N*[ mgm_main ] )
 
-def gm_have_image( state, image, val ):
+def gm_have_image( state, image, val, rigid ):
     d, m = image
-    rigid = state.rigid
+    # rigid = 
     type_dict = rigid[ "type_dict" ]
     satellites = type_dict[ "satellite" ]
     on_board = rigid[ "on_board" ]
@@ -106,7 +106,7 @@ def gm_have_image( state, image, val ):
 
 methods.declare_goal_methods( "have_image", N * [ gm_have_image ] )
 
-def tm_take_image( state, s, i, d, m ):
+def tm_take_image( state, s, i, d, m, rigid ):
 
     pointing = state.pointing
     d_prev = pointing[ s ]
@@ -118,13 +118,13 @@ def tm_take_image( state, s, i, d, m ):
     else:
         yield [ ("turn_to", s, d, d_prev), ("take_image", s, d, i, m) ]
 
-def tm_take_image_0( state, s, i, d, m ):
+def tm_take_image_0( state, s, i, d, m, rigid ):
     pointing = state.pointing
     # s pointing at d
     if( pointing[ s ] == d ):
         yield [ ( "take_image", s, d, i, m ) ]
 
-def tm_take_image_1( state, s, i, d, m ):
+def tm_take_image_1( state, s, i, d, m, rigid ):
     pointing = state.pointing
     # s not pointing at d
     if( pointing[ s ] != d ):
@@ -133,12 +133,12 @@ def tm_take_image_1( state, s, i, d, m ):
 
 methods.declare_task_methods( "t_take_image", N*[ tm_take_image ] )
 
-def tm_prepare_instrument( state, s, i ):
+def tm_prepare_instrument( state, s, i, rigid ):
     yield [ ( "t_turn_on_instrument", s, i ), ( "t_calibrate_instrument", s, i ) ]
 
 methods.declare_task_methods( "t_prepare_instrument", N*[ tm_prepare_instrument ] )
 
-def tm_turn_on_instrument( state, s, i):
+def tm_turn_on_instrument( state, s, i, rigid ):
 
     # i already has power
     power_on = state.power_on
@@ -153,7 +153,6 @@ def tm_turn_on_instrument( state, s, i):
 
         else:
             # s has one powered instrument that is not i
-            rigid = state.rigid
             on_board = rigid[ "on_board" ]
             for i_on_s in on_board[ s ]:
                 if power_on[ i_on_s ]:
@@ -161,22 +160,21 @@ def tm_turn_on_instrument( state, s, i):
                     # no point in searching after first instance
                     break
 
-def tm_turn_on_instrument_0( state, s, i):
+def tm_turn_on_instrument_0( state, s, i, rigid ):
     # i already has power
     power_on = state.power_on
     if power_on[ i ]:
         yield []
 
-def tm_turn_on_instrument_1( state, s, i ):
+def tm_turn_on_instrument_1( state, s, i, rigid ):
     # s has no powered instruments
     power_avail = state.power_avail
     if power_avail[ s ]:
         yield [ ( "switch_on", i, s )]
 
 
-def tm_turn_on_instrument_2( state, s, i ):
+def tm_turn_on_instrument_2( state, s, i, rigid ):
     power_on = state.power_on
-    rigid = state.rigid
     on_board = rigid[ "on_board" ]
     # s has one powered instrument that is not i
     for i_on_s in on_board[ s ]:
@@ -185,7 +183,7 @@ def tm_turn_on_instrument_2( state, s, i ):
 
 methods.declare_task_methods( "t_turn_on_instrument", N*[ tm_turn_on_instrument ] )
 
-def tm_calibrate_instrument( state, s, i ):
+def tm_calibrate_instrument( state, s, i, rigid ):
 
     power_on = state.power_on
     calibrated = state.calibrated
@@ -197,7 +195,6 @@ def tm_calibrate_instrument( state, s, i ):
         # not calibrated
         else:
             pointing = state.pointing
-            rigid = state.rigid
             calibration_target = rigid[ "calibration_target" ]
             d = pointing[ s ]
             d_new = calibration_target[ i ]
@@ -209,27 +206,25 @@ def tm_calibrate_instrument( state, s, i ):
                 # i on and s not pointing at calibration target of i
                 yield [ ( "turn_to", s, d_new, d ), ( "calibrate", s, i, d_new ) ]
 
-def tm_calibrate_instrument_0( state, s, i ):
+def tm_calibrate_instrument_0( state, s, i, rigid ):
     power_on = state.power_on
     calibrated = state.calibrated
     # i on and calibrated
     if power_on[ i ] and calibrated[ i ]:
         yield []
 
-def tm_calibrate_instrument_1( state, s, i ):
+def tm_calibrate_instrument_1( state, s, i, rigid ):
     power_on = state.power_on
     pointing = state.pointing
-    rigid = state.rigid
     calibration_target = rigid[ "calibration_target" ]
     # i on and s pointing at calibration target of i
     d = pointing[ s ]
     if power_on[ i ] and calibration_target[ i ] == d:
         yield  [ ( "calibrate", s, i, d ) ]
 
-def tm_calibrate_instrument_2( state, s, i ):
+def tm_calibrate_instrument_2( state, s, i, rigid ):
     power_on = state.power_on
     pointing = state.pointing
-    rigid = state.rigid
     calibration_target = rigid[ "calibration_target" ]
     # i on and s not pointing at calibration target of i
     d_prev = pointing[ s ]

@@ -25,20 +25,21 @@ The state is described with following properties:
 from typing import List, Dict, Set
 from examples.satellite.domain.actions import type_check
 import random
+from functools import partial
 
 # satellite deviation handler
-def deviation_handler( act_tuple, state ):
+def deviation_handler( act_tuple, state, rigid ):
     deviation_operators = [
         d_change_direction,
         d_decalibration,
-        # d_power_loss
+        d_power_loss
     ]
     d_operator = random.choice( deviation_operators )
+    d_operator = partial( d_operator, rigid=rigid )
     return d_operator( state )
 
 # mutate random satellite pointing
-def d_change_direction( state ):
-    rigid = state.rigid
+def d_change_direction( state, rigid ):
     type_dict = rigid[ "type_dict" ]
     pointing = state.pointing
     satellites = type_dict[ "satellite" ]
@@ -57,8 +58,7 @@ def d_change_direction( state ):
     return state
 
 # decalibrate random instrument
-def d_decalibration( state ):
-    rigid = state.rigid
+def d_decalibration( state, rigid ):
     type_dict = rigid[ "type_dict" ]
     instruments = type_dict[ "instrument" ]
     calibrated = state.calibrated
@@ -71,16 +71,21 @@ def d_decalibration( state ):
 
 # CAUSES ITERATION EXPLOSION IN OLD PLANNER
 # cause random powered instrument to lose power
-def d_power_loss( state ):
-    rigid = state.rigid
+def d_power_loss( state, rigid ):
     type_dict = rigid[ "type_dict" ]
     instruments = type_dict[ "instrument" ]
+    satellites = type_dict[ "satellite" ]
+    on_board = rigid[ "on_board" ]
     power_on = state.power_on
     power_on_instruments = tuple( filter( lambda x: power_on[ x ], instruments ) )
     # only powered on instruments can lose power
     if len( power_on_instruments ) > 0:
         power_loss_instrument = random.choice( power_on_instruments )
         state.power_on[ power_loss_instrument ] = False
+        # set power avail for associated satellite
+        for s in satellites:
+            if power_loss_instrument in on_board[ s ]:
+                state.power_avail[ s ] = True
     return state
 
 
