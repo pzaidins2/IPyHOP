@@ -156,7 +156,7 @@ action_probability = {
     "switch_on": [ 1, 0 ],
     "switch_off": [ 1, 0 ],
     "calibrate": [ 1, 0 ],
-    "take_image": [ 0.8, 0.2 ]
+    "take_image": [ 0, 1 ]
 }
 
 action_cost = {
