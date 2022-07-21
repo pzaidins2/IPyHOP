@@ -21,14 +21,14 @@ The state is described with following properties:
 - delivered = dict with ( order, product ) as keys and bool representing whether product has been delivered for order as values
 - stacks_open = int for number of current open stacks
 - shipped = dict with orders as keys and bool indicating whether the order has shipped as values
+- waiting = dict with orders as keys and bool indicating whether the order is waiting as values
 
 """
 
 from ipyhop import Actions
 from typing import List, Dict, Set
 
-def make_product( state, p ):
-    rigid = state.rigid
+def make_product( state, p, rigid ):
     type_dict = rigid[ "type_dict" ]
     made = state.made
     started = state.started
@@ -44,8 +44,7 @@ def make_product( state, p ):
             state.made[ p ] = True
             return state
 
-def start_order( state, o ):
-    rigid = state.rigid
+def start_order( state, o, rigid ):
     type_dict = rigid[ "type_dict" ]
     waiting = state.waiting
     stacks_open = state.stacks_open
@@ -62,11 +61,10 @@ def start_order( state, o ):
             # started order
             state.started[ o ] = True
             # open new stack
-            state.stacks_open +=1
+            state.stacks_open += 1
             return state
 
-def ship_order( state, o ):
-    rigid = state.rigid
+def ship_order( state, o, rigid ):
     type_dict = rigid[ "type_dict" ]
     made = state.made
     started = state.started
@@ -78,7 +76,7 @@ def ship_order( state, o ):
         # order is started
         # all products included in order are made
         # a stack is open
-        if all( [ started[ o ], all( [ made[ p ] for p in includes[ o ] ] ), stacks_open > 0 ] ):
+        if started[ o ] and all( [ made[ p ] for p in includes[ o ] ] ) and stacks_open > 0:
             # effects
             # order is no longer started
             state.started[ o ] = False
@@ -88,11 +86,25 @@ def ship_order( state, o ):
             state.stacks_open -= 1
             return state
 
-def reset( state, o ):
+# special replanning action
+def reset( state, o, rigid ):
     started = state.started
     shipped = state.shipped
-    # waiting?
-    pass
+    type_dict = rigid[ "type_dict" ]
+    waiting = state.waiting
+    # type check
+    if type_check( [ o ], [ "order" ], type_dict ):
+        # preconditions
+        # o is started
+        # o is not shipped
+        # o is not waiting
+        if started[ o ] and not( shipped[ o ] ) and not( waiting[ o ] ):
+            # effects
+            # o is waiting
+            state.waiting[ o ] = True
+            # o is not started
+            state.started[ o ] = False
+            return state
 
 
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.

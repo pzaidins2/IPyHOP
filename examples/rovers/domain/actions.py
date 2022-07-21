@@ -18,8 +18,10 @@ The state is described with following properties:
     - visible = dict with waypoint as key and set of waypoints as value
     - visible_from = dict with objective as key and set of waypoints as value
     - store_of = dict with store as key and rover as value
+    - has_store = dict with rover as key and store as value
     - calibration_target = dict with camera as key and objective as value
-    - on_board = dict with camera as kay and rover as value
+    - on_board = dict with camera as key and rover as value
+    - carries = dict with rover as key and set of cameras on_board as value
     - at_lander = dict with lander as key and the location waypoint as value
     - can_traverse = dict with rover as key and set of ( waypoint, waypoint ) as value
 - at = dict with rover as key and the location waypoint as value
@@ -33,7 +35,7 @@ The state is described with following properties:
 - have_image = dict with rover as key and set of ( objective, mode ) as value
 - communicated_soil_data = dict with waypoint as key and bool value
 - communicated_rock_data = dict with waypoint as key and bool value
-- communicated_image_data = dict with waypoint as key and bool value
+- communicated_image_data = dict with ( waypoint, mode ) as key and bool value
 - at_soil_sample = dict with waypoint as key and bool value
 - at_rock_sample = dict with waypoint as key and bool value
 - channel_free = dict with lander as key and bool as value
@@ -42,8 +44,7 @@ The state is described with following properties:
 from ipyhop import Actions
 from typing import List, Dict, Set
 
-def navigate( state, r, p_0, p_1 ):
-    rigid = state.rigid
+def navigate( state, r, p_0, p_1, rigid ):
     type_dict = rigid[ "type_dict" ]
     can_traverse = rigid[ "can_traverse" ]
     available = state.available
@@ -56,22 +57,14 @@ def navigate( state, r, p_0, p_1 ):
         # r is available
         # r is at p_0
         # w_1 is visible from p_0
-        if all( [
-            (p_0, p_1) in can_traverse[ r ],
-            available[ r ],
-            at[ r ] == p_0,
-            p_1 in visible[ p_0 ]
-        ] ):
+        if available[ r ] and at[ r ] == p_0 and p_1 in visible[ p_0 ] and (p_0, p_1) in can_traverse[ r ]:
             # effects
             # location of r is now p_1
             state.at[ r ] = p_1
             return state
 
-def sample_soil( state, r, s, p ):
-    rigid = state.rigid
+def sample_soil( state, r, s, p, rigid ):
     type_dict = rigid[ "type_dict" ]
-    can_traverse = rigid[ "can_traverse" ]
-    available = state.available
     at = state.at
     at_soil_sample = state.at_soil_sample
     equipped_for_soil_analysis = rigid[ "equipped_for_soil_analysis" ]
@@ -85,13 +78,8 @@ def sample_soil( state, r, s, p ):
         # r is equipped for soil analysis
         # s is a store of r
         # s is empty
-        if all( [
-            at[ r ] == p,
-            at_soil_sample[ p ],
-            equipped_for_soil_analysis[ r ],
-            store_of[ s ] == r,
-            empty[ s ]
-        ] ):
+        if empty[ s ] and equipped_for_soil_analysis[ r ] and \
+                at_soil_sample[ p ] and at[ r ] == p and store_of[ s ] == r:
             # effects
             # s is not emptu
             # s is full
@@ -103,8 +91,7 @@ def sample_soil( state, r, s, p ):
             state.at_soil_sample[ p ] = False
             return state
 
-def sample_rock( state, r, s, p ):
-    rigid = state.rigid
+def sample_rock( state, r, s, p, rigid ):
     type_dict = rigid[ "type_dict" ]
     at = state.at
     at_rock_sample = state.at_rock_sample
@@ -119,13 +106,8 @@ def sample_rock( state, r, s, p ):
         # r is equipped for rock analysis
         # s is a store of r
         # s is empty
-        if all( [
-            at[ r ] == p,
-            at_rock_sample[ p ],
-            equipped_for_rock_analysis[ r ],
-            store_of[ s ] == r,
-            empty[ s ]
-        ] ):
+        if empty[ s ] and equipped_for_rock_analysis[ r ] and \
+                at_rock_sample[ p ] and at[ r ] == p and store_of[ s ] == r:
             # effects
             # s is not emptu
             # s is full
@@ -137,8 +119,7 @@ def sample_rock( state, r, s, p ):
             state.at_rock_sample[ p ] = False
             return state
 
-def drop( state, r, s ):
-    rigid = state.rigid
+def drop( state, r, s, rigid ):
     type_dict = rigid[ "type_dict" ]
     store_of = rigid[ "store_of" ]
     full = state.full
@@ -147,10 +128,7 @@ def drop( state, r, s ):
         # preconditions
         # s is store of r
         # s is full
-        if all( [
-            store_of[ s ] == r,
-            full[ s ]
-        ] ):
+        if full[ s ] and store_of[ s ] == r:
             # effects
             # s is not full
             # s is empty
@@ -158,8 +136,7 @@ def drop( state, r, s ):
             state.empty[ s ] = True
             return state
 
-def calibrate( state, r, i, t, w ):
-    rigid = state.rigid
+def calibrate( state, r, i, t, w, rigid ):
     type_dict = rigid[ "type_dict" ]
     equipped_for_imaging = rigid[ "equipped_for_imaging" ]
     calibration_target = rigid[ "calibration_target" ]
@@ -174,20 +151,14 @@ def calibrate( state, r, i, t, w ):
         # r is at w
         # t is visible from w
         # i is on r
-        if all( [
-            equipped_for_imaging[ r ],
-            calibration_target[ i ] == t,
-            at[ r ] == w,
-            w in visible_from[ t ],
-            on_board[ i ] == r
-        ] ):
+        if equipped_for_imaging[ r ] and calibration_target[ i ] == t and at[ r ] == w and \
+            on_board[ i ] == r and w in visible_from[ t ]:
             # effects
             # calibrate i on r
             state.calibrated[ ( i, r ) ] == True
             return state
 
-def take_image( state, r, p, o, i, m ):
-    rigid = state.rigid
+def take_image( state, r, p, o, i, m, rigid ):
     type_dict = rigid[ "type_dict" ]
     equipped_for_imaging = rigid[ "equipped_for_imaging" ]
     at = state.at
@@ -204,14 +175,8 @@ def take_image( state, r, p, o, i, m ):
         # i supports m
         # o visible from p
         # r at p
-        if all( [
-            calibrated[ ( i, r ) ],
-            on_board[ i ] == r,
-            equipped_for_imaging[ r ],
-            m in supports[ i ],
-            p in visible_from[ o ],
-            at[ r ] == p
-        ] ):
+        if calibrated[ ( i, r ) ] and equipped_for_imaging[ r ] and on_board[ i ] == r and at[ r ] == p and \
+            m in supports[ i ] and p in visible_from[ o ]:
             # effects
             # r has image ( o, m )
             # ( i, r ) no longer calibrated
@@ -219,8 +184,7 @@ def take_image( state, r, p, o, i, m ):
             state.calibrated[ ( i, r ) ] = False
             return state
 
-def communicate_soil_data( state, r, l, p_0, p_1, p_2 ):
-    rigid = state.rigid
+def communicate_soil_data( state, r, l, p_0, p_1, p_2, rigid ):
     type_dict = rigid[ "type_dict" ]
     at = state.at
     visible= rigid[ "visible" ]
@@ -237,21 +201,16 @@ def communicate_soil_data( state, r, l, p_0, p_1, p_2 ):
         # p_2 visible from p_1
         # r available
         # l has free channel
-        if all( [
-            at[ r ] == p_1,
-            at_lander[ l ] == p_2,
-            have_soil_analysis[ (r, p_0) ],
-            p_2 in visible[ p_1 ],
-            available[ r ],
-            free_channel[ l ]
-        ] ):
+        if have_soil_analysis[ (r, p_0) ] and available[ r ] and free_channel[ l ] and \
+                at[ r ] == p_1 and at_lander[ l ] == p_2 and p_2 in visible[ p_1 ]:
             # effects
             # soil data of p_0 has been communicated
             state.communicated_soil_data[ p_0 ] = True
+            state.available[ r ] = True
+            state.free_channel[ l ] = True
             return state
 
-def communicate_rock_data( state, r, l, p_0, p_1, p_2 ):
-    rigid = state.rigid
+def communicate_rock_data( state, r, l, p_0, p_1, p_2, rigid ):
     type_dict = rigid[ "type_dict" ]
     at = state.at
     visible= rigid[ "visible" ]
@@ -268,20 +227,16 @@ def communicate_rock_data( state, r, l, p_0, p_1, p_2 ):
         # p_2 visible from p_1
         # r available
         # l has free channel
-        if all( [
-            at[ r ] == p_1,
-            at_lander[ l ] == p_2,
-            have_rock_analysis[ (r, p_0) ],
-            p_2 in visible[ p_1 ],
-            available[ r ],
-            free_channel[ l ]
-        ] ):
+        if have_rock_analysis[ (r, p_0) ] and available[ r ] and free_channel[ l ] and \
+                at[ r ] == p_1 and at_lander[ l ] == p_2 and p_2 in visible[ p_1 ]:
             # effects
             # rock data of p_0 has been communicated
             state.communicated_rock_data[ p_0 ] = True
+            state.available[ r ] = True
+            state.free_channel[ l ] = True
             return state
 
-def communicate_image_data( state, r, l, o, m, p_0, p_1 ):
+def communicate_image_data( state, r, l, o, m, p_0, p_1, rigid ):
     rigid = state.rigid
     type_dict = rigid[ "type_dict" ]
     at = state.at
@@ -300,19 +255,20 @@ def communicate_image_data( state, r, l, o, m, p_0, p_1 ):
         # p_2 visible from p_1
         # r available
         # l has free channel
-        if all( [
-            at[ r ] == p_0,
-            at_lander[ l ] == p_1,
-            ( o, m ) in have_image[ r ],
-            p_1 in visible[ p_0 ],
-            available[ r ],
-            free_channel[ l ]
-        ] ):
+        if available[ r ] and free_channel[ l ] and at[ r ] == p_0 and at_lander[ l ] == p_1 and \
+                ( o, m ) in have_image[ r ] and p_1 in visible[ p_0 ]:
             # effects
             # rock data of p_0 has been communicated
-            state.communicated_image[ ( o, m ) ] = True
+            state.communicated_image_data[ ( o, m ) ] = True
+            state.available[ r ] = True
+            state.free_channel[ l ] = True
             return state
 
+# replicate !!retract macro effect without having state changes in method
+def retract( state, field, key, rigid ):
+    state_attr = getattr( state, field )
+    state_attr[ key ] = False
+    return state
 
 
 
