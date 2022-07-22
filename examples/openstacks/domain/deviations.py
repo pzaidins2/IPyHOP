@@ -29,10 +29,10 @@ def d_unmake_product( state, rigid ):
     made = state.made
     included_in = rigid[ "included_in" ]
     type_dict = rigid[ "type_dict" ]
-    products = type_dict[ "product" ]
+    products = [ *type_dict[ "product" ] ]
     shipped = state.shipped
     # random product that is made and not shipped is unmade
-    products = random.shuffle( [ *products ] )
+    random.shuffle( products )
     for p in products:
         if made[ p ] and all([ not( shipped[ o ] ) for o in included_in[ p ] ] ):
             state.made[ p ] = False
@@ -41,13 +41,13 @@ def d_unmake_product( state, rigid ):
 
 def d_unship_order( state, rigid ):
     shipped = state.shipped
-    open_stacks = state.open_stacks
+    stacks_open = state.stacks_open
     max_stacks = rigid[ "max_stacks" ]
     type_dict = rigid[ "type_dict" ]
-    orders = type_dict[ "order" ]
+    orders = [ *type_dict[ "order" ] ]
     # unship random order
-    if open_stacks < max_stacks:
-        orders = random.shuffle( [ *orders ] )
+    if stacks_open < max_stacks:
+        random.shuffle( orders )
         for o in orders:
             if shipped[ o ]:
                 state.started[ o ] = False

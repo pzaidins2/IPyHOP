@@ -109,14 +109,21 @@ def reset( state, o, rigid ):
 
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.
 actions = Actions()
-actions.declare_actions( [ make_product, ship_order, ship_order ] )
+actions.declare_actions( [ make_product, start_order, ship_order, reset ] )
 
+p_fail = 0.1
 action_probability = {
-
+    "make_product": [ 1, 0 ],
+    "start_order": [ 1, 0 ],
+    "ship_order": [ 1 - p_fail, p_fail ],
+    "reset": [ 1, 0 ]
 }
 
 action_cost = {
-
+    "make_product": 1,
+    "start_order": 1,
+    "ship_order": 1,
+    "reset": 1
 }
 
 actions.declare_action_models(action_probability, action_cost)
