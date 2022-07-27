@@ -60,6 +60,7 @@ class Actor:
             # if no state is None plan executed successfully
             if type( self.planner ) == IPyHOP_Old and plan == [ ]:
                 plan_impossible = True
+                raise( "No plan found!" )
                 if verbose >= 1:
                     print( "No plan is possible..." )
                 break

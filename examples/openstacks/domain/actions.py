@@ -106,24 +106,33 @@ def reset( state, o, rigid ):
             state.started[ o ] = False
             return state
 
+# action that exists for verify-orders to cause failure in plan when missing unshipped orders
+def verify_orders( state, multigoal, rigid ):
+    shipped = state.shipped
+    want_shipped = multigoal.shipped
+    need_shipped = { *want_shipped.items() } - { *shipped.items() }
+    if len( need_shipped ) == 0:
+        return state
 
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.
 actions = Actions()
-actions.declare_actions( [ make_product, start_order, ship_order, reset ] )
+actions.declare_actions( [ make_product, start_order, ship_order, reset, verify_orders ] )
 
-p_fail = 0.1
+p_fail = 0
 action_probability = {
     "make_product": [ 1, 0 ],
     "start_order": [ 1, 0 ],
     "ship_order": [ 1 - p_fail, p_fail ],
-    "reset": [ 1, 0 ]
+    "reset": [ 1, 0 ],
+    "verify_orders": [ 1, 0 ]
 }
 
 action_cost = {
     "make_product": 1,
     "start_order": 1,
     "ship_order": 1,
-    "reset": 1
+    "reset": 1,
+    "verify_orders": 1
 }
 
 actions.declare_action_models(action_probability, action_cost)

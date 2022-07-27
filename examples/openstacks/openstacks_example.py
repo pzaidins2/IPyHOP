@@ -35,7 +35,7 @@ def init_openstacks( pddl_str, actions, methods, deviation_handler ):
     for obj_list, obj_type in object_re_matches:
         type_dict[ obj_type ] = { *obj_list.split( " " ) }
         if obj_type == "count":
-            rigid[ "max_stacks" ] = len( type_dict[ obj_type ] )
+            rigid[ "max_stacks" ] = len( type_dict[ obj_type ] ) - 1
     # uniary relations
     unary_re = re.compile( "(waiting|shipped) (\w+)" )
     state_0.waiting = dict()
@@ -60,7 +60,7 @@ def init_openstacks( pddl_str, actions, methods, deviation_handler ):
     state_0.busy = False
     state_0.making = dict()
     state_0.started = dict()
-    state_0.delivered = dict()
+    # state_0.delivered = dict()
     state_0.stacks_open = 0
     state_0.shipped = dict()
     for p in type_dict[ "product" ]:
@@ -69,8 +69,8 @@ def init_openstacks( pddl_str, actions, methods, deviation_handler ):
     for o in type_dict[ "order" ]:
         for rel in [ "started", "shipped" ]:
             getattr( state_0, rel )[ o ] = False
-    for o, p in product( type_dict[ "order" ], type_dict[ "product" ] ):
-        getattr( state_0, "delivered" )[ ( o, p ) ] = False
+    # for o, p in product( type_dict[ "order" ], type_dict[ "product" ] ):
+    #     getattr( state_0, "delivered" )[ ( o, p ) ] = False
 
     # rigid never needs to be copied so avoid this by partial evaluation of actions, methods, and deviation_handler that take rigid
     methods.goal_method_dict.update(

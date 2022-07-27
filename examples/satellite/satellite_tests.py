@@ -1,4 +1,9 @@
+#!/usr/bin/env python
+"""
+File Description: Satellites testing file. Run this file to create Satellite test data.
+"""
 
+# ******************************************    Libraries to be imported    ****************************************** #
 from examples.satellite.domain.actions import actions
 from examples.satellite.domain.methods import methods
 from examples.satellite.domain.deviations import deviation_handler

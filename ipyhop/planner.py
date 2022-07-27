@@ -390,7 +390,7 @@ class IPyHOP(object):
         while node_id_stack != []:
 
             if verbose >= 3:
-                print("Loop Head, Node Stack is: " + str(node_id_stack ))
+                print("Loop Head, Node Stack is: " + str([self.sol_tree.nodes[ x ][ "info" ] for x in node_id_stack] ))
             # get top of stack
             node_id = node_id_stack[ 0 ]
             # root has no parent we have exhausted all methods
@@ -398,7 +398,7 @@ class IPyHOP(object):
             true_state = state_stack[ 0 ].copy()
             # get parent id
             parent_id = next( sol_tree.predecessors( node_id ) )
-            parent_node =sol_tree.nodes[ parent_id ]
+            parent_node = sol_tree.nodes[ parent_id ]
 
             # print( parent_id )
             # unexpand node
@@ -413,13 +413,14 @@ class IPyHOP(object):
 
             # replace child with parent on stack
             node_id_stack[ 0 ] = parent_id
+            print(self.sol_tree.nodes[parent_id]["info"])
 
             # there exists relevant methods we have not tried
             # propagate expansion downward, backtracking if needed but never higher than current node
             if node[ "available_methods" ] != []:
                 self.state = true_state
                 _iter, exec_id = self._planning(node_id ,verbose=verbose)
-                self.iterations += _iter
+                self.iterations += _iter + 1
             # deadend move up
             else:
                 # check if root is reached
@@ -458,7 +459,6 @@ class IPyHOP(object):
             # print(true_state)
             act_plan = [ sol_tree.nodes[ x ][ "info" ] for x in plan ]
             sim_state, sim_index = self.simulate_no_copy( true_state, act_plan, exec_plan_index )
-
             # if a problem occurs put state at failure and attempted node on stack
             if sim_index != len( plan ) - 1:
                 state_stack.insert( 0, sim_state )

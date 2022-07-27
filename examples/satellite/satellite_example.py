@@ -150,7 +150,7 @@ def main():
             if "pddl" not in problem_file_name:
                 continue
             print( problem_file_name )
-    #         problem_file_name = "problems/p11.pddl"
+            # problem_file_name = "problems/p20.pddl"
             problem_file = open( problem_file_name, "r" )
             problem_str = problem_file.read()
             problem_file.close()

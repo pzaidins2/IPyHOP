@@ -52,8 +52,8 @@ def mgm_plan( state, multigoal, rigid ):
     # if unfulfilled shipments
     if len( need_shipped ) > 0:
         new_multigoal = multigoal.copy()
-        new_multigoal.goal_tag = "mg_plan_for_goals"
-        yield [ ( "t_reset_order_status", ), new_multigoal ]
+        new_multigoal.goal_tag = "t_plan_for_goals"
+        yield [ ( "t_reset_order_status", ), ( "t_plan_for_goals", new_multigoal  ) ]
 
 methods.declare_multigoal_methods( "mg_plan", [ mgm_plan ] )
 
@@ -75,23 +75,25 @@ def tm_reset_order_status_1( state, rigid ):
 
 methods.declare_task_methods( "t_reset_order_status", [ tm_reset_order_status_0, tm_reset_order_status_1 ] )
 
-def mgm_plan_for_goals_0( state, multigoal, rigid ):
+def tm_plan_for_goals_0( state, multigoal, rigid ):
     has_shipped = { *state.shipped.items() }
     want_shipped = { *multigoal.shipped.items() }
     need_shipped = want_shipped - has_shipped
+    print( need_shipped )
     # recursively ship orders
     if len( need_shipped ) > 0:
-        yield [ ( "t_one_step", ), multigoal ]
+        yield [ ( "t_one_step", ), ( "t_plan_for_goals", multigoal ) ]
 
-def mgm_plan_for_goals_1( state, multigoal, rigid ):
+def tm_plan_for_goals_1( state, multigoal, rigid ):
     has_shipped = { *state.shipped.items() }
     want_shipped = { *multigoal.shipped.items() }
     need_shipped = want_shipped - has_shipped
+    print( need_shipped )
     # end recursion
-    if len( need_shipped ) == 0:
-        yield [ ]
+    # if len( need_shipped ) == 0:
+    yield [ ( "t_verify_orders", multigoal ) ]
 
-methods.declare_multigoal_methods( "mg_plan_for_goals", [ mgm_plan_for_goals_0, mgm_plan_for_goals_1 ] )
+methods.declare_task_methods( "t_plan_for_goals", [ tm_plan_for_goals_0, tm_plan_for_goals_1 ] )
 
 def tm_one_step_0( state, rigid ):
     shipped = state.shipped
@@ -204,6 +206,11 @@ def tm_start_an_order_for( state, p, o, rigid ):
         yield [ ( "start_order", o ) ]
 
 methods.declare_task_methods( "t_start_an_order_for", [ tm_start_an_order_for ] )
+
+def tm_verify_orders( state, multigoal, rigid ):
+    yield [ ( "verify_orders", multigoal ) ]
+
+methods.declare_task_methods( "t_verify_orders", [ tm_verify_orders ] )
 
 def ship_products( state, o, val, rigid ):
     stacks_open = state.stacks_open
