@@ -61,12 +61,12 @@ class Actor:
             # unzip list of tuples into seperate lists
             action_list, state_list = [ *zip( *exec_result ) ]
             # if no state is None plan executed successfully
-            if type( self.planner ) == IPyHOP_Old and plan == [ ]:
-                plan_impossible = True
-                raise( "No plan found!" )
-                if verbose >= 1:
-                    print( "No plan is possible..." )
-                break
+            # if type( self.planner ) == IPyHOP_Old and plan == [ ]:
+            #     plan_impossible = True
+            #     raise( "No plan found!" )
+            #     if verbose >= 1:
+            #         print( "No plan is possible..." )
+            #     break
             if state_list[ -1 ] != None:
                 plan_success = True
                 history += [ *action_list[ 1: ] ]

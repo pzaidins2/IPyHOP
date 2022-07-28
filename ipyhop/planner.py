@@ -462,7 +462,7 @@ class IPyHOP(object):
             # print("STATE")
             # print(true_state)
             act_plan = [ sol_tree.nodes[ x ][ "info" ] for x in plan ]
-            sim_state, sim_index, sim_success = self.simulate_no_copy( sol_tree.nodes[ exec_id ][ "state" ], act_plan, exec_plan_index )
+            sim_state, sim_index, sim_success = self.simulate_no_copy( true_state, act_plan, exec_plan_index )
             # if a problem occurs put state at failure and attempted node on stack
 
             if not sim_success:
