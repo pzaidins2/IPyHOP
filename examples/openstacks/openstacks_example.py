@@ -86,23 +86,23 @@ def init_openstacks( pddl_str, actions, methods, deviation_handler ):
     return state_0, goal_a, deviation_handler
 # ******************************************        Main Program Start       ***************************************** #
 def main():
-    while True:
-        for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
-            if "pddl" not in problem_file_name:
-                continue
-            print( problem_file_name )
-            # problem_file_name = "problems/p30.pddl"
+    # while True:
+    #     for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
+    #         if "pddl" not in problem_file_name:
+    #             continue
+    #         print( problem_file_name )
+            problem_file_name = "problems/p30.pddl"
             problem_file = open( problem_file_name, "r" )
             problem_str = problem_file.read()
             problem_file.close()
 
-            planner = IPyHOP_Old( methods, actions )
+            planner = IPyHOP( methods, actions )
             state_0, goal_a, dev_hand= init_openstacks( problem_str, actions, methods, deviation_handler )
             print( state_0 )
             print( goal_a )
             mc_executor = MonteCarloExecutor( actions, dev_hand )
             actor = Actor( planner, mc_executor )
-            history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
+            history = actor.complete_to_do( state_0, [ goal_a ] )
 
 # ******************************************        Main Program End        ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #

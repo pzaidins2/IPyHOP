@@ -76,6 +76,9 @@ def ship_order( state, o, rigid ):
         # order is started
         # all products included in order are made
         # a stack is open
+        # print("SHIP")
+        # print( o )
+        # print( started[ o ] and all( [ made[ p ] for p in includes[ o ] ] ) and stacks_open > 0 )
         if started[ o ] and all( [ made[ p ] for p in includes[ o ] ] ) and stacks_open > 0:
             # effects
             # order is no longer started
@@ -111,6 +114,7 @@ def verify_orders( state, multigoal, rigid ):
     shipped = state.shipped
     want_shipped = multigoal.shipped
     need_shipped = { *want_shipped.items() } - { *shipped.items() }
+    # print(need_shipped)
     if len( need_shipped ) == 0:
         return state
 
@@ -118,7 +122,7 @@ def verify_orders( state, multigoal, rigid ):
 actions = Actions()
 actions.declare_actions( [ make_product, start_order, ship_order, reset, verify_orders ] )
 
-p_fail = 0
+p_fail = 0.1
 action_probability = {
     "make_product": [ 1, 0 ],
     "start_order": [ 1, 0 ],

@@ -111,7 +111,7 @@ class IPyHOP(object):
 
         _iter = 0
         parent_node_id = sub_graph_root_node_id
-        prev_node_id = sub_graph_root_node_id
+        marked_node_id = None
         for _iter in count(0):
             if parent_node_id in ancestors( self.sol_tree, sub_graph_root_node_id ):
                 break
@@ -120,6 +120,8 @@ class IPyHOP(object):
             for node_id in self.sol_tree.successors( parent_node_id ):
                 if self.sol_tree.nodes[node_id]['status'] == 'O':
                     curr_node_id = node_id
+                    if marked_node_id == None:
+                        marked_node_id = curr_node_id
                     if self._verbose > 1:
                         print('Iteration {}, Refining node {}.'.format(
                             _iter, repr(self.sol_tree.nodes[node_id]['info'])))
@@ -144,7 +146,6 @@ class IPyHOP(object):
                         _iter, repr([self.sol_tree.nodes[x]['info'] for x in self.sol_tree.successors(parent_node_id)])))
             # Else, it means that an Open node was found in the subgraph. Refine the node.
             else:
-                prev_node_id = curr_node_id
                 curr_node_id, parent_node_id = self._node_refine( curr_node_id, parent_node_id, _iter )
             # if parent_node_id in ancestors( self.sol_tree, sub_graph_root_node_id ):
             #     break
@@ -162,7 +163,7 @@ class IPyHOP(object):
         # print( [*dfs_preorder_nodes( self.sol_tree )] )
         # print( sub_graph_root_node_id )
         # print( parent_node_id )
-        return _iter, next( dfs_preorder_nodes( self.sol_tree, sub_graph_root_node_id ) )
+        return _iter, next( dfs_preorder_nodes( self.sol_tree, marked_node_id ) )
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _node_refine(self, curr_node_id: int, parent_node_id: int, _iter: int ):
@@ -390,12 +391,12 @@ class IPyHOP(object):
         while node_id_stack != []:
 
             if verbose >= 3:
-                print("Loop Head, Node Stack is: " + str([self.sol_tree.nodes[ x ][ "info" ] for x in node_id_stack] ))
+                print("Loop Head, Node Stack is: " + str([self.sol_tree.nodes[y ][ "info" ] for y in node_id_stack] ))
             # get top of stack
             node_id = node_id_stack[ 0 ]
             # root has no parent we have exhausted all methods
 
-            true_state = state_stack[ 0 ].copy()
+            true_state = state_stack[ 0 ]
             # get parent id
             parent_id = next( sol_tree.predecessors( node_id ) )
             parent_node = sol_tree.nodes[ parent_id ]
@@ -404,6 +405,7 @@ class IPyHOP(object):
             # unexpand node
             sol_tree.remove_nodes_from( descendants( sol_tree, node_id ) )
             node = sol_tree.nodes[ node_id ]
+            # print(node["info"])
             node[ "status" ] = "O"
             node[ 'available_methods' ] = [ *node[ 'methods' ] ] # CHANGE
             node[ "selected_method" ] = None
@@ -413,14 +415,16 @@ class IPyHOP(object):
 
             # replace child with parent on stack
             node_id_stack[ 0 ] = parent_id
-            print(self.sol_tree.nodes[parent_id]["info"])
+            # print(self.sol_tree.nodes[parent_id]["info"])
 
             # there exists relevant methods we have not tried
             # propagate expansion downward, backtracking if needed but never higher than current node
             if node[ "available_methods" ] != []:
-                self.state = true_state
-                _iter, exec_id = self._planning(node_id ,verbose=verbose)
-                self.iterations += _iter + 1
+                self.state = true_state.copy()
+                _iter, exec_id = self._planning(parent_id ,verbose=verbose)
+                self.iterations += _iter
+                if node[ "status" ] == "O":
+                    continue
             # deadend move up
             else:
                 # check if root is reached
@@ -435,7 +439,7 @@ class IPyHOP(object):
                     node_id_stack.pop(0)
                     state_stack.pop(0)
                 continue
-
+            # print("HERE_0")
             # get new plan
             # plan is actions in left-right order, ignore previously executed commands unless
             # needed to complete immediate goal/task
@@ -458,12 +462,14 @@ class IPyHOP(object):
             # print("STATE")
             # print(true_state)
             act_plan = [ sol_tree.nodes[ x ][ "info" ] for x in plan ]
-            sim_state, sim_index = self.simulate_no_copy( true_state, act_plan, exec_plan_index )
+            sim_state, sim_index, sim_success = self.simulate_no_copy( sol_tree.nodes[ exec_id ][ "state" ], act_plan, exec_plan_index )
             # if a problem occurs put state at failure and attempted node on stack
-            if sim_index != len( plan ) - 1:
+
+            if not sim_success:
                 state_stack.insert( 0, sim_state )
                 node_id_stack.insert( 0, next( sol_tree.predecessors( plan[ sim_index ] ) ) )
                 continue
+            # print( "HERE_2" )
             # plan worked
             break
 
@@ -617,11 +623,13 @@ class IPyHOP(object):
         """
         prev_state = state.copy()
         curr_state = prev_state
+        # print("SIMULATE")
         for i, action in enumerate( act_plan[ start_ind: ] ):
             curr_state = self.actions.action_dict[action[0]](prev_state, *action[1:])
             if curr_state == None:
-                return ( prev_state, start_ind + i )
-        return ( curr_state, len( act_plan ) - 1 )
+                return ( prev_state, start_ind + i, False )
+            prev_state = curr_state
+        return ( curr_state, len( act_plan ) - 1, True )
     # ******************************        Class Method Declaration        ****************************************** #
     def blacklist_command(self, command: Tuple):
         """
