@@ -396,7 +396,7 @@ class IPyHOP(object):
             node_id = node_id_stack[ 0 ]
             # root has no parent we have exhausted all methods
 
-            true_state = state_stack[ 0 ]
+            true_state = state_stack[ 0 ].copy()
             # get parent id
             parent_id = next( sol_tree.predecessors( node_id ) )
             parent_node = sol_tree.nodes[ parent_id ]
@@ -409,7 +409,7 @@ class IPyHOP(object):
             node[ "status" ] = "O"
             node[ 'available_methods' ] = [ *node[ 'methods' ] ] # CHANGE
             node[ "selected_method" ] = None
-            node[ "state" ] = None
+            node[ "state" ] = true_state.copy()
             # node[ "state" ] = true_state
             node[ "selected_method_instances" ] = None # CHANGE
 

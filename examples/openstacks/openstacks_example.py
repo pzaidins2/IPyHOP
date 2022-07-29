@@ -103,6 +103,7 @@ def main():
             mc_executor = MonteCarloExecutor( actions, dev_hand )
             actor = Actor( planner, mc_executor )
             history = actor.complete_to_do( state_0, [ goal_a ] )
+            print( history )
 
 # ******************************************        Main Program End        ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #

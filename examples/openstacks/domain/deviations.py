@@ -18,7 +18,8 @@ from functools import partial
 # satellite deviation handler
 def deviation_handler( act_tuple, state, rigid ):
     deviation_operators = [
-        d_unmake_product,
+        # original says this can make unfixable plan, but still present and no work around given
+        # d_unmake_product,
         d_unship_order
     ]
     d_operator = random.choice( deviation_operators )

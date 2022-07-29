@@ -54,10 +54,13 @@ class Actor:
         exec_index = 0
         while not ( plan_impossible or plan_success ):
             # execute until success or failure
-            # print("EXECUTE")
+            # print("EXECUTE START")
+            # print( plan[ exec_index: ] )
             exec_result = self.executor.execute( curr_state, plan[ exec_index: ] )
             # print(plan)
-            # print(exec_result)
+            # print( "EXECUTE END" )
+            print(exec_result)
+            # print( "EXECUTE RESULT" )
             # unzip list of tuples into seperate lists
             action_list, state_list = [ *zip( *exec_result ) ]
             # if no state is None plan executed successfully
