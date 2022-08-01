@@ -122,7 +122,7 @@ def verify_orders( state, multigoal, rigid ):
 actions = Actions()
 actions.declare_actions( [ make_product, start_order, ship_order, reset, verify_orders ] )
 
-p_fail = 0.1
+p_fail = 0.8
 action_probability = {
     "make_product": [ 1, 0 ],
     "start_order": [ 1, 0 ],

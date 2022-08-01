@@ -59,7 +59,7 @@ class Actor:
             exec_result = self.executor.execute( curr_state, plan[ exec_index: ] )
             # print(plan)
             # print( "EXECUTE END" )
-            print(exec_result)
+            # print(exec_result)
             # print( "EXECUTE RESULT" )
             # unzip list of tuples into seperate lists
             action_list, state_list = [ *zip( *exec_result ) ]
