@@ -145,12 +145,12 @@ def init_sat( pddl_str, actions, methods, deviation_handler ):
 # ******************************************        Main Program Start       ***************************************** #
 def main():
     while True:
-        for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
-        #     problem_file_name = "problems/p05.pddl"
-            if "pddl" not in problem_file_name:
-                continue
-            print( problem_file_name )
-            # problem_file_name = "problems/p20.pddl"
+        # for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
+        # #     problem_file_name = "problems/p05.pddl"
+        #     if "pddl" not in problem_file_name:
+        #         continue
+        #     print( problem_file_name )
+            problem_file_name = "problems/p10.pddl"
             problem_file = open( problem_file_name, "r" )
             problem_str = problem_file.read()
             problem_file.close()

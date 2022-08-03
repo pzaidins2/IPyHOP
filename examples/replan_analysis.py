@@ -11,7 +11,7 @@ import itertools
 
 if __name__ == '__main__':
     # error rates tested
-    error_rates = [ *range( 0, 110, 10 ) ]
+    error_rates = [ *range( 0, 90, 10 ) ]
     E = len( error_rates )
     # planner types used
     planner_types = [ "old", "new" ]
@@ -22,14 +22,14 @@ if __name__ == '__main__':
     # number of tests per setting
     N = 1000
     # number of distinct problems
-    Q = 20
+    Q = 30
     Qs = [ i + 1 for i in range( Q + 1 )]
 
     # data tensor
     results = -1 * np.ones( ( E, P, M, N, Q ) )
 
     # read in data
-    data_dir = "satellite/data"
+    data_dir = "openstacks/data"
 
     coord_re = re.compile( "([a-z]+)_([a-z]+)_([\w]+)\.csv" )
 

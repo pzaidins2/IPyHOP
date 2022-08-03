@@ -84,7 +84,7 @@ def d_cannot_see_to_calibrate( act_tuple, state, rigid ):
     type_dict = rigid[ "type_dict" ]
     rovers = type_dict[ "rover" ]
     modes = type_dict[ "mode" ]
-    visible_from = rigid[ "visible_from" ]
+    visible_from = state.visible_from
     on_board = rigid[ "on_board" ]
     calibration_target = rigid[ "calibration_target" ]
     calibrated = state.calibrated
@@ -109,7 +109,7 @@ def d_cannot_see_to_calibrate( act_tuple, state, rigid ):
                 have_image_check = map( lambda x: ( x[ 1 ], x[ 2 ] ) in have_image[ x[ 0 ] ], r_i_m )
                 if not any( have_image_check ):
                     # PROBLEM
-                    rigid[ "visible_from" ][ o ].remove( w )
+                    state.visible_from[ o ].remove( w )
     return state
 
 def d_cannot_see_to_take_image( act_tuple, state, rigid ):
@@ -118,7 +118,7 @@ def d_cannot_see_to_take_image( act_tuple, state, rigid ):
     type_dict = rigid[ "type_dict" ]
     rovers = type_dict[ "rover" ]
     modes = type_dict[ "mode" ]
-    visible_from = rigid[ "visible_from" ]
+    visible_from = state.visible_from
     on_board = rigid[ "on_board" ]
     calibration_target = rigid[ "calibration_target" ]
     equipped_for_imaging = state.equipped_for_imaging
@@ -139,7 +139,7 @@ def d_cannot_see_to_take_image( act_tuple, state, rigid ):
             # avoid making objective unreachable
             if len( visible_from_o ) > 2:
                 # PROBLEM
-                rigid[ "visible_from" ][ o ].remove( w )
+                state.visible_from[ o ].remove( w )
     return state
 
 

@@ -16,7 +16,7 @@ The state is described with following properties:
     - equipped_for_imaging = dict with rover as key and bool value
     - supports = dict with camera as key and set of modes as value
     - visible = dict with waypoint as key and set of waypoints as value
-    - visible_from = dict with objective as key and set of waypoints as value
+
     - store_of = dict with store as key and rover as value
     - has_store = dict with rover as key and store as value
     - calibration_target = dict with camera as key and objective as value
@@ -26,12 +26,12 @@ The state is described with following properties:
     - can_traverse = dict with rover as key and set of ( waypoint, waypoint ) as value
 - at = dict with rover as key and the location waypoint as value
 
-- empty = dict with store as key and bool as value
-- have_rock_analysis =dict with ( rover, waypoint ) key and bool value
-- have_soil_analysis =dict with ( rover, waypoint ) key and bool value
-- full = dict with store as key and bool as value
+- empty = set of empty stores
+- have_rock_analysis = dict with rover as key and set of waypoints at value
+- have_soil_analysis = dict with rover as key and set of waypoints at value
+- full = set of full stores
 - calibrated = dict with ( camera, rover ) key and bool value
-- available = dict with rover as key and bool value
+- available = set of available rovers Note: doesn't appear to be used
 - have_image = dict with rover as key and set of ( objective, mode ) as value
 - communicated_soil_data = dict with waypoint as key and bool value
 - communicated_rock_data = dict with waypoint as key and bool value
@@ -39,6 +39,7 @@ The state is described with following properties:
 - at_soil_sample = dict with waypoint as key and bool value
 - at_rock_sample = dict with waypoint as key and bool value
 - channel_free = dict with lander as key and bool as value
+- visible_from = dict with objective as key and set of waypoints as value (deviations modify this)
 """
 
 from ipyhop import Actions
@@ -57,7 +58,7 @@ def navigate( state, r, p_0, p_1, rigid ):
         # r is available
         # r is at p_0
         # w_1 is visible from p_0
-        if available[ r ] and at[ r ] == p_0 and p_1 in visible[ p_0 ] and (p_0, p_1) in can_traverse[ r ]:
+        if r in available and at[ r ] == p_0 and p_1 in visible[ p_0 ] and (p_0, p_1) in can_traverse[ r ]:
             # effects
             # location of r is now p_1
             state.at[ r ] = p_1
@@ -78,17 +79,17 @@ def sample_soil( state, r, s, p, rigid ):
         # r is equipped for soil analysis
         # s is a store of r
         # s is empty
-        if empty[ s ] and equipped_for_soil_analysis[ r ] and \
-                at_soil_sample[ p ] and at[ r ] == p and store_of[ s ] == r:
+        if s in empty and equipped_for_soil_analysis[ r ] and \
+                p in at_soil_sample and at[ r ] == p and store_of[ s ] == r:
             # effects
             # s is not emptu
             # s is full
             # have soil analysis ( r, p )
             # p is not at soil_sample
-            state.empty[ s ] = False
-            state.full[ s ] = True
-            state.have_soil_analysis[ ( r, p ) ] = True
-            state.at_soil_sample[ p ] = False
+            state.empty.remove( s )
+            state.full.add( s )
+            state.have_soil_analysis[ r ].add( p )
+            state.at_soil_sample.remove( p )
             return state
 
 def sample_rock( state, r, s, p, rigid ):
@@ -106,17 +107,17 @@ def sample_rock( state, r, s, p, rigid ):
         # r is equipped for rock analysis
         # s is a store of r
         # s is empty
-        if empty[ s ] and equipped_for_rock_analysis[ r ] and \
-                at_rock_sample[ p ] and at[ r ] == p and store_of[ s ] == r:
+        if s in empty and equipped_for_rock_analysis[ r ] and \
+                p in at_rock_sample and at[ r ] == p and store_of[ s ] == r:
             # effects
             # s is not emptu
             # s is full
             # have rock analysis ( r, p )
             # p is not at rock_sample
-            state.empty[ s ] = False
-            state.full[ s ] = True
-            state.have_rock_analysis[ ( r, p ) ] = True
-            state.at_rock_sample[ p ] = False
+            state.empty.remove( s )
+            state.full.add( s )
+            state.have_rock_analysis[ r ].add( p )
+            state.at_rock_sample.remove( p )
             return state
 
 def drop( state, r, s, rigid ):
@@ -128,12 +129,12 @@ def drop( state, r, s, rigid ):
         # preconditions
         # s is store of r
         # s is full
-        if full[ s ] and store_of[ s ] == r:
+        if s in full and store_of[ s ] == r:
             # effects
             # s is not full
             # s is empty
-            state.full[ s ] = False
-            state.empty[ s ] = True
+            state.full.remove( s )
+            state.empty.add( s )
             return state
 
 def calibrate( state, r, i, t, w, rigid ):
@@ -141,7 +142,7 @@ def calibrate( state, r, i, t, w, rigid ):
     equipped_for_imaging = rigid[ "equipped_for_imaging" ]
     calibration_target = rigid[ "calibration_target" ]
     at = state.at
-    visible_from = rigid[ "visible_from" ]
+    visible_from = state.visible_from
     on_board = rigid[ "on_board" ]
     # type check
     if type_check( [ r, i, t, w ], [ "rover", "camera", "objective", "waypoint" ], type_dict ):
@@ -155,14 +156,14 @@ def calibrate( state, r, i, t, w, rigid ):
             on_board[ i ] == r and w in visible_from[ t ]:
             # effects
             # calibrate i on r
-            state.calibrated[ ( i, r ) ] == True
+            state.calibrated[ ( i, r ) ] = True
             return state
 
 def take_image( state, r, p, o, i, m, rigid ):
     type_dict = rigid[ "type_dict" ]
     equipped_for_imaging = rigid[ "equipped_for_imaging" ]
     at = state.at
-    visible_from = rigid[ "visible_from" ]
+    visible_from = state.visible_from
     on_board = rigid[ "on_board" ]
     calibrated = state.calibrated
     supports = rigid[ "supports" ]
@@ -191,7 +192,7 @@ def communicate_soil_data( state, r, l, p_0, p_1, p_2, rigid ):
     at_lander = rigid[ "at_lander" ]
     have_soil_analysis = state.have_soil_analysis
     available = state.available
-    free_channel = state.free_channel
+    channel_free = state.channel_free
     # type check
     if type_check( [ r, l, p_0, p_1, p_2 ], [ "rover", "lander", "waypoint", "waypoint", "waypoint" ], type_dict ):
         # preconditions
@@ -201,13 +202,13 @@ def communicate_soil_data( state, r, l, p_0, p_1, p_2, rigid ):
         # p_2 visible from p_1
         # r available
         # l has free channel
-        if have_soil_analysis[ (r, p_0) ] and available[ r ] and free_channel[ l ] and \
-                at[ r ] == p_1 and at_lander[ l ] == p_2 and p_2 in visible[ p_1 ]:
+        if r in available  and at[ r ] == p_1 and at_lander[ l ] == p_2 and l in channel_free and \
+                p_0 in have_soil_analysis[ r ] and p_2 in visible[ p_1 ]:
             # effects
             # soil data of p_0 has been communicated
             state.communicated_soil_data[ p_0 ] = True
-            state.available[ r ] = True
-            state.free_channel[ l ] = True
+            state.available.add( r )
+            state.channel_free.add( l )
             return state
 
 def communicate_rock_data( state, r, l, p_0, p_1, p_2, rigid ):
@@ -217,7 +218,7 @@ def communicate_rock_data( state, r, l, p_0, p_1, p_2, rigid ):
     at_lander = rigid[ "at_lander" ]
     have_rock_analysis = state.have_rock_analysis
     available = state.available
-    free_channel = state.free_channel
+    channel_free = state.channel_free
     # type check
     if type_check( [ r, l, p_0, p_1, p_2 ], [ "rover", "lander", "waypoint", "waypoint", "waypoint" ], type_dict ):
         # preconditions
@@ -227,24 +228,23 @@ def communicate_rock_data( state, r, l, p_0, p_1, p_2, rigid ):
         # p_2 visible from p_1
         # r available
         # l has free channel
-        if have_rock_analysis[ (r, p_0) ] and available[ r ] and free_channel[ l ] and \
-                at[ r ] == p_1 and at_lander[ l ] == p_2 and p_2 in visible[ p_1 ]:
+        if r in available and at[ r ] == p_1 and at_lander[ l ] == p_2 and l in channel_free and \
+                p_0 in have_rock_analysis[ r ] and p_2 in visible[ p_1 ]:
             # effects
             # rock data of p_0 has been communicated
             state.communicated_rock_data[ p_0 ] = True
-            state.available[ r ] = True
-            state.free_channel[ l ] = True
+            state.available.add( r )
+            state.channel_free.add( l )
             return state
 
 def communicate_image_data( state, r, l, o, m, p_0, p_1, rigid ):
-    rigid = state.rigid
     type_dict = rigid[ "type_dict" ]
     at = state.at
     visible= rigid[ "visible" ]
     at_lander = rigid[ "at_lander" ]
     have_image = state.have_image
     available = state.available
-    free_channel = state.free_channel
+    channel_free = state.channel_free
     # type check
     if type_check( [ r, l, o, m, p_0, p_1 ],
                    [ "rover", "lander", "objective", "mode", "waypoint", "waypoint" ], type_dict ):
@@ -255,13 +255,13 @@ def communicate_image_data( state, r, l, o, m, p_0, p_1, rigid ):
         # p_2 visible from p_1
         # r available
         # l has free channel
-        if available[ r ] and free_channel[ l ] and at[ r ] == p_0 and at_lander[ l ] == p_1 and \
+        if r in available  and at[ r ] == p_0 and at_lander[ l ] == p_1 and l in channel_free and \
                 ( o, m ) in have_image[ r ] and p_1 in visible[ p_0 ]:
             # effects
             # rock data of p_0 has been communicated
             state.communicated_image_data[ ( o, m ) ] = True
-            state.available[ r ] = True
-            state.free_channel[ l ] = True
+            state.available.add( r )
+            state.channel_free.add( l )
             return state
 
 # replicate !!retract macro effect without having state changes in method
@@ -275,14 +275,34 @@ def retract( state, field, key, rigid ):
 
 # Create a IPyHOP Actions object. An Actions object stores all the actions defined for the planning domain.
 actions = Actions()
-actions.declare_actions( [ ] )
+actions.declare_actions( [ navigate, sample_soil, sample_rock, drop, calibrate, take_image, communicate_soil_data,
+                           communicate_rock_data, communicate_image_data, retract ] )
 
+p_fail = 0
 action_probability = {
-
+    "navigate": [ 1, 0 ],
+    "sample_soil": [ 1, 0 ],
+    "sample_rock": [ 1, 0 ],
+    "drop": [ 1, 0 ],
+    "calibrate": [ 1, 0 ],
+    "take_image": [ 1, 0 ],
+    "communicate_soil_data": [ 1 - p_fail, p_fail ],
+    "communicate_rock_data": [ 1 - p_fail, p_fail ],
+    "communicate_image_data": [ 1 - p_fail, p_fail ],
+    "retract": [ 1, 0 ]
 }
 
 action_cost = {
-
+    "navigate": 1,
+    "sample_soil": 1,
+    "sample_rock": 1,
+    "drop": 1,
+    "calibrate": 1,
+    "take_image": 1,
+    "communicate_soil_data": 1,
+    "communicate_rock_data": 1,
+    "communicate_image_data": 1,
+    "retract": 1
 }
 
 actions.declare_action_models(action_probability, action_cost)
