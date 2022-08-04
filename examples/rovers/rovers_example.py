@@ -123,12 +123,12 @@ def init_rovers( pddl_str, actions, methods, deviation_handler ):
     return state_0, goal_a, deviation_handler
 # ******************************************        Main Program Start       ***************************************** #
 def main():
-    # while True:
-    #     for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
-    #         if "pddl" not in problem_file_name:
-    #             continue
-    #         print( problem_file_name )
-            problem_file_name = "problems/p10.pddl"
+    while True:
+        for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
+            if "pddl" not in problem_file_name:
+                continue
+            print( problem_file_name )
+            # problem_file_name = "problems/p20.pddl"
             problem_file = open( problem_file_name, "r" )
             problem_str = problem_file.read()
             problem_file.close()
@@ -139,7 +139,7 @@ def main():
             print( goal_a )
             mc_executor = MonteCarloExecutor( actions, dev_hand )
             actor = Actor( planner, mc_executor )
-            history = actor.complete_to_do( state_0, [ goal_a ] )
+            history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
             if len( history ) == 0:
                 raise( "FAILED PLANNING")
 

@@ -391,7 +391,7 @@ class IPyHOP(object):
         while node_id_stack != []:
 
             if verbose >= 3:
-                print("Loop Head, Node Stack is: " + str([self.sol_tree.nodes[y ][ "info" ] for y in node_id_stack] ))
+                print("Loop Head, Node Stack is: " + str( node_id_stack ) )
             # get top of stack
             node_id = node_id_stack[ 0 ]
             # root has no parent we have exhausted all methods
