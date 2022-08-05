@@ -50,7 +50,7 @@ def run_experiment( i, j, k, problem_file_path ):
 def main():
     problem_file_names = filter( lambda x: "pddl" in x, os.listdir( "problems" ) )
     problem_paths = [ "problems/" + x for x in problem_file_names ]
-    N = 1000
+    N = 20
     M = len( problem_paths )
     P = 2
     metrics = np.ndarray( ( P, N, M, 3 ) )
@@ -61,7 +61,7 @@ def main():
         for j in range( N ):
             for k in range( M ):
                 args.append( ( i, j, k, problem_paths[ k ] ) )
-    # i = 0
+    # i = 1
     # for j in range( N ):
     #     for k in range( M ):
     #         args.append( (i, j, k, problem_paths[ k ]) )
@@ -131,7 +131,7 @@ def main():
     c_2 = "black"
     plt.figure(0)
     ax = plt.subplot( 3, 1, 1 )
-    title = "80% Failure Rate in Rovers Domain"
+    title = "40% Failure Rate in Rovers Domain"
     plt.title( title )
     # plt.bar( x, new_mean_iteration_count, yerr=new_err_iteration_count, width=bar_width, label="new" )
     # plt.bar( x + bar_width, old_mean_iteration_count, yerr=old_err_iteration_count, width=bar_width, label="old"  )
