@@ -10,15 +10,15 @@ from ipyhop_tests.test_state_models import init_state_1 as init_state
 
 methods = Methods()
 
-def tm_1_1(state): return [('tm_2', ), ('t_a', 3, 4), ('t_a', 4, 5)]
-def tm_1_2(state): return [('tm_2', ), ('t_a', 3, 4), ('t_a', 4, 5), ('t_a', 5, 6)]
+def tm_1_1(state): yield [('tm_2', ), ('t_a', 3, 4), ('t_a', 4, 5)]
+def tm_1_2(state): yield [('tm_2', ), ('t_a', 3, 4), ('t_a', 4, 5), ('t_a', 5, 6)]
 methods.declare_task_methods('tm_1', [tm_1_1, tm_1_2, tm_1_2])
 
-def tm_2_1(state): return [('t_a', 0, 1), ('t_a', 1, 2), ('t_a', 2, 3)]
-def tm_2_2(state): return [('t_a', 0, 1), ('t_a', 1, 2), ('t_a', 2, 3), ('t_a', 3, 7)]
+def tm_2_1(state): yield [('t_a', 0, 1), ('t_a', 1, 2), ('t_a', 2, 3)]
+def tm_2_2(state): yield [('t_a', 0, 1), ('t_a', 1, 2), ('t_a', 2, 3), ('t_a', 3, 7)]
 methods.declare_task_methods('tm_2', [tm_2_1, tm_2_2])
 
-def tm_3_1(state): return [('t_a', 9, 10)]
+def tm_3_1(state): yield [('t_a', 9, 10)]
 methods.declare_task_methods('tm_3', [tm_3_1])
 
 
