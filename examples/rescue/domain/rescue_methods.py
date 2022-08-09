@@ -11,45 +11,45 @@ methods = Methods()
 
 def tm1_move(state, r, l):  # Take the straight path.
     if state.loc[r] == l:
-        return []
+        yield []
     elif state.robot_type[r] == 'wheeled':      # TODO: Ask if we are excluding UAVs from this method
         dist = None         # TODO: Ask why dist needs to be passed to the action/command.
-        return [('a_move_euclidean', r, state.loc[r], l, dist)]
-    return None
+        yield [('a_move_euclidean', r, state.loc[r], l, dist)]
+    yield None
 
 
 def tm2_move(state, r, l):  # Take the manhattan path.
     if state.loc[r] == l:
-        return []
+        yield []
     elif state.robot_type[r] == 'wheeled':  # TODO: Ask if we are excluding UAVs from this method
         dist = None  # TODO: Ask why dist needs to be passed to the action/command.
-        return [('a_move_manhattan', r, state.loc[r], l, dist)]
-    return None
+        yield [('a_move_manhattan', r, state.loc[r], l, dist)]
+    yield None
 
 
 def tm3_move(state, r, l):  # Take the curved path.
     if state.loc[r] == l:
-        return []
+        yield []
     elif state.robot_type[r] == 'wheeled':  # TODO: Ask if we are excluding UAVs from this method
         dist = None  # TODO: Ask why dist needs to be passed to the action/command.
-        return [('a_move_curved', r, state.loc[r], l, dist)]
-    return None
+        yield [('a_move_curved', r, state.loc[r], l, dist)]
+    yield None
 
 
 def tm4_move(state, r, l):  # Fly to the location.
     if state.loc[r] == l:
-        return []
+        yield []
     elif state.robot_type[r] == 'uav':
-        return [('a_move_fly', r, state.loc[r], l)]
-    return None
+        yield [('a_move_fly', r, state.loc[r], l)]
+    yield None
 
 
 def tm5_move(state, r, l):  # Fly to the location.
     if state.loc[r] == l:
-        return []
+        yield []
     elif state.robot_type[r] == 'uav':
-        return [('a_move_alt_fly', r, state.loc[r], l)]
-    return None
+        yield [('a_move_alt_fly', r, state.loc[r], l)]
+    yield None
 
 
 methods.declare_task_methods('move_task', [tm1_move, tm2_move, tm3_move, tm4_move, tm5_move])
@@ -63,8 +63,8 @@ def tm1_new_robot_encap(state, p):
             task_list.append(('get_supplies_task', r2))
         task_list.append(('help_person_task', r2, p))
         task_list.append(('a_free_robot', r2))
-        return task_list
-    return None
+        yield task_list
+    yield None
 
 
 methods.declare_task_methods('new_robot_encap_task', [tm1_new_robot_encap])
@@ -76,14 +76,14 @@ def tm1_rescue(state, r, p):
         if state.has_medicine[r] == 0:
             task_list.append(('get_supplies_task', r))
         task_list.append(('help_person_task', r, p))
-        return task_list
-    return None
+        yield task_list
+    yield None
 
 
 def tm2_rescue(state, r, p):
 
     if state.robot_type[r] == 'uav':
-        return [('get_robot_task', ), ('new_robot_encap_task', p)]
+        yield [('get_robot_task', ), ('new_robot_encap_task', p)]
 
 
 methods.declare_task_methods('rescue_task', [tm1_rescue, tm2_rescue])
@@ -91,30 +91,30 @@ methods.declare_task_methods('rescue_task', [tm1_rescue, tm2_rescue])
 
 def tm1_support_person(state, r, p):
     if state.status[p] == 'injured':
-        return [('a_support_person', r, p), ]
-    return None
+        yield [('a_support_person', r, p), ]
+    yield None
 
 
 def tm2_support_person(state, r, p):
     if state.status[p] == 'injured':
-        return [('a_support_person_2', r, p), ]
-    return None
+        yield [('a_support_person_2', r, p), ]
+    yield None
 
 
 def tm3_support_person(state, r, p):
     if state.status[state.loc[p]] == 'has_debri':
-        return [('a_clear_location', r, state.loc[p]), ]
-    return None
+        yield [('a_clear_location', r, state.loc[p]), ]
+    yield None
 
 
 def tm4_support_person(state, r, p):
     if state.status[state.loc[p]] == 'has_debri':
-        return [('a_clear_location_2', r, state.loc[p]), ]
-    return None
+        yield [('a_clear_location_2', r, state.loc[p]), ]
+    yield None
 
 
 def tm5_support_person(state, r, p):
-    return [('a_check_real', state.loc[p]), ]
+    yield [('a_check_real', state.loc[p]), ]
 
 
 # Extra task added.
@@ -124,7 +124,7 @@ methods.declare_task_methods('support_task', [tm1_support_person, tm2_support_pe
 
 # Modified this task method.
 def tm1_help_person(state, r, p):
-    return [('move_task', r, state.loc[p]), ('a_inspect_location', r, state.loc[p]), ('a_inspect_person', r, p),
+    yield [('move_task', r, state.loc[p]), ('a_inspect_location', r, state.loc[p]), ('a_inspect_person', r, p),
             ('support_task', r, p)]
 
 
@@ -149,11 +149,11 @@ def tm1_get_supplies(state, r):     # Get supplies from the nearest robot.
                 r2 = r1
 
     if r2 is not None:
-        return [('move_task', r, state.loc[r2]), ('a_transfer', r2, r)]
+        yield [('move_task', r, state.loc[r2]), ('a_transfer', r2, r)]
 
 
 def tm2_get_supplies(state, r):     # Get supplies from the base.
-    return [('move_task', r, (1, 1)), ('a_replenish_supplies', r)]
+    yield [('move_task', r, (1, 1)), ('a_replenish_supplies', r)]
 
 
 methods.declare_task_methods('get_supplies_task', [tm1_get_supplies, tm2_get_supplies])
@@ -166,9 +166,9 @@ def tm1_rescue_encap(state, r):
     person = img['person']
 
     if person is not None:
-        return [('rescue_task', r, person)]
+        yield [('rescue_task', r, person)]
     else:
-        return []
+        yield []
 
 
 methods.declare_task_methods('rescue_encap_task', [tm1_rescue_encap])
@@ -176,17 +176,17 @@ methods.declare_task_methods('rescue_encap_task', [tm1_rescue_encap])
 
 def tm1_survey(state, r, l):
     if state.robot_type[r] != 'uav':
-        return None
+        yield None
 
-    return [('adjust_altitute_task', r), ('a_capture_image', r, 'front_camera', l), ('rescue_encap_task', r),
+    yield [('adjust_altitute_task', r), ('a_capture_image', r, 'front_camera', l), ('rescue_encap_task', r),
             ('a_check_real', l)]
 
 
 def tm2_survey(state, r, l):
     if state.robot_type[r] != 'uav':
-        return None
+        yield None
 
-    return [('adjust_altitute_task', r), ('a_capture_image', r, 'bottom_camera', l), ('rescue_encap_task', r),
+    yield [('adjust_altitute_task', r), ('a_capture_image', r, 'bottom_camera', l), ('rescue_encap_task', r),
             ('a_check_real', l)]
 
 
@@ -205,13 +205,13 @@ def tm1_get_robot(state):
                 dist = _dist
 
     if robot is None:
-        return None
+        yield None
     else:
-        return [('a_engage_robot', robot)]
+        yield [('a_engage_robot', robot)]
 
 
 def tm2_get_robot(state):
-    return [('a_force_engage_robot',)]
+    yield [('a_force_engage_robot',)]
 
 
 methods.declare_task_methods('get_robot_task', [tm1_get_robot, tm2_get_robot])
@@ -219,12 +219,12 @@ methods.declare_task_methods('get_robot_task', [tm1_get_robot, tm2_get_robot])
 
 def tm1_adjust_altitute(state, r):
     if state.altitude[r] == 'high':
-        return [('a_change_altitude', r, 'low')]
+        yield [('a_change_altitude', r, 'low')]
 
 
 def tm2_adjust_altitute(state, r):
     if state.altitude[r] == 'low':
-        return [('a_change_altitude', r, 'high')]
+        yield [('a_change_altitude', r, 'high')]
 
 
 methods.declare_task_methods('adjust_altitute_task', [tm1_adjust_altitute, tm2_adjust_altitute])

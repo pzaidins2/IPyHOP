@@ -14,7 +14,7 @@ The state is described with following properties:
     - on_board = dict with satellites as keys and set of on board instrument as values
     - calibration_target = dict with instrument as key and direction for calibration as value
     - supports = dict with instrument as key and set of supported modes as value
-- pointing = dict with satellite as key and diretion pointing as value
+- pointing = dict with satellite as key and direction pointing as value
 - power_avail = dict with satellite as key and bool indicating whether power is available as value
 - power_on = dict with instrument as key and bool indicating whether instrument is turn on
 - calibrated = dict with instrument as key and bool indicating whether instrument is calibrated
