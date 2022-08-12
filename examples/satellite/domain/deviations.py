@@ -36,6 +36,7 @@ def deviation_handler( act_tuple, state, rigid ):
     ]
     d_operator = random.choice( deviation_operators )
     d_operator = partial( d_operator, rigid=rigid )
+    print( act_tuple )
     return d_operator( state )
 
 # mutate random satellite pointing
@@ -54,6 +55,7 @@ def d_change_direction( state, rigid ):
         directions = tuple( type_dict[ "direction" ] - { d } )
         d_new = random.choice( directions )
         # change satellite pointing
+        # print( ( "d_change_direction", s, d_new, d ) )
         state.pointing[ s ] = d_new
     return state
 
@@ -66,10 +68,10 @@ def d_decalibration( state, rigid ):
     # can only decalibrate calibrated instrument
     if len( calibrated_instruments ) > 0:
         decalibrated_instrument = random.choice( calibrated_instruments )
+        print( ( "d_decalibration", decalibrated_instrument ) )
         state.calibrated[ decalibrated_instrument ] = False
     return state
 
-# CAUSES ITERATION EXPLOSION IN OLD PLANNER
 # cause random powered instrument to lose power
 def d_power_loss( state, rigid ):
     type_dict = rigid[ "type_dict" ]
@@ -86,6 +88,8 @@ def d_power_loss( state, rigid ):
         for s in satellites:
             if power_loss_instrument in on_board[ s ]:
                 state.power_avail[ s ] = True
+                print( ( "d_power_loss", power_loss_instrument ) )
+                break
     return state
 
 
