@@ -36,7 +36,7 @@ def deviation_handler( act_tuple, state, rigid ):
     ]
     d_operator = random.choice( deviation_operators )
     d_operator = partial( d_operator, rigid=rigid )
-    print( act_tuple )
+    # print( act_tuple )
     return d_operator( state )
 
 # mutate random satellite pointing
@@ -68,7 +68,7 @@ def d_decalibration( state, rigid ):
     # can only decalibrate calibrated instrument
     if len( calibrated_instruments ) > 0:
         decalibrated_instrument = random.choice( calibrated_instruments )
-        print( ( "d_decalibration", decalibrated_instrument ) )
+        # print( ( "d_decalibration", decalibrated_instrument ) )
         state.calibrated[ decalibrated_instrument ] = False
     return state
 
@@ -88,7 +88,7 @@ def d_power_loss( state, rigid ):
         for s in satellites:
             if power_loss_instrument in on_board[ s ]:
                 state.power_avail[ s ] = True
-                print( ( "d_power_loss", power_loss_instrument ) )
+                # print( ( "d_power_loss", power_loss_instrument ) )
                 break
     return state
 
