@@ -5,10 +5,9 @@ File Description: Robosub example file. Run this file to solve the Robosub plann
 
 # ******************************************    Libraries to be imported    ****************************************** #
 from __future__ import print_function
-from examples.robosub.domain.robosub_methods import methods
-from examples.robosub.domain.robosub_actions import actions
-from examples.robosub.problem.robosub_problem_1 import init_state, task_list
-from networkx import dfs_preorder_nodes
+from examples.robosub.domain.robosub_mod_methods import methods
+from examples.robosub.domain.robosub_mod_actions import actions
+from examples.robosub.problem.robosub_mod_problem import init_state, task_list_1
 from ipyhop import IPyHOP, planar_plot
 
 
@@ -21,7 +20,7 @@ def main():
     planner = IPyHOP(methods, actions)
     planner.blacklist_command(('a_touch_back_v', 'v1', 'l2'))
     planner.blacklist_command(('a_touch_front_v', 'v1', 'l2'))
-    plan = planner.plan(init_state, task_list, verbose=3)
+    plan = planner.plan(init_state, task_list_1, verbose=3)
     graph = planner.sol_tree
 
 
@@ -49,6 +48,7 @@ def main():
     print("If failure occurs at: " + str(fail_action))
     print("New task list will be: " + str(new_task_list))
     planar_plot(graph, root_node=0)
+
 
 # ******************************************        Main Program End        ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #
