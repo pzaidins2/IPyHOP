@@ -31,7 +31,7 @@ def main():
     # planar_plot(graph, root_node=0)
     # fail_action = ('a_drop_garlic_closed_coffin', 'gm2', 'c1', 'l3')
     # fail_action = ('a_drop_garlic_closed_coffin', 'gm1', 'c1', 'l3')
-    fail_action = ('a_stake_decapitated_dracula', 't1', 'd1', 'l4')
+    fail_action = ('a_drop_garlic_open_coffin', 'gm1', 'c1')
     # print( planner.sol_tree.nodes(data=True))
     for k, v in planner.sol_tree.nodes(data=True):
         # print( k )
