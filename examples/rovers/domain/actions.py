@@ -278,7 +278,7 @@ actions = Actions()
 actions.declare_actions( [ navigate, sample_soil, sample_rock, drop, calibrate, take_image, communicate_soil_data,
                            communicate_rock_data, communicate_image_data, retract ] )
 
-p_fail = 0.8
+p_fail = 0.2
 action_probability = {
     "navigate": [ 1, 0 ],
     "sample_soil": [ 1 - p_fail, p_fail ],

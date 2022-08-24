@@ -39,55 +39,55 @@ def run_experiment( i, j, k ):
         iteration_count = planner.iterations
         cpu_time = time_elapsed
         action_count = len( history )
-        print( ( ( i, j, k ), ( iteration_count, cpu_time, action_count )  ) )
-        return ( ( i, j, k ) , ( iteration_count, cpu_time, action_count )  )
+        print( ( ( i, j, k ), ( action_count, cpu_time, iteration_count )  ) )
+        return ( ( i, j, k ) , ( action_count, cpu_time, iteration_count )  )
     except:
-        print( "\nEXCEPTION OCCURRED: " + str( ( i, j ) ) + "\n" )
-        return ( ( i, j ) , ( -1, -1, -1 ) )
+        print( "\nEXCEPTION OCCURRED: " + str( ( i, j, k ) ) + "\n" )
+        return ( ( i, j, k ) , ( -1, -1, -1 ) )
 
 if __name__ == '__main__':
-    N = 1000
-    P = 2
-    M = 1000
-    metrics = np.ndarray( (P, N, M, 3) )
-
-    print( metrics.shape )
-    args = [ ]
-    for i in range( P ):
-        for j in range( N ):
-            for k in range( M ):
-                args.append( (i, j, k) )
-
-    # with cProfile.Profile() as pr:
-    # for exp_set in args:
-    #     run_experiment( *exp_set )
-
-    # pr.print_stats()
-
-    with Pool( processes=cpu_count() ) as pool:
-        output = pool.starmap_async( run_experiment, args, chunksize=1 )
-        while True:
-            if output.ready():
-                break
-            print( str( round( 100 - 100 * output._number_left / len( args ), 3 ) ) + " %" )
-            time.sleep( 60 )
-    for exp in output.get():
-        metrics[ exp[ 0 ] ] = np.asarray( exp[ 1 ] )
-
-    new_robosub_action_count = metrics[ 0, :, :, 0 ]
-    new_robosub_cpu_time = metrics[ 0, :, :, 1 ]
-    new_robosub_iteration_count = metrics[ 0, :, :, 2 ]
-    old_robosub_action_count = metrics[ 1, :, :, 0 ]
-    old_robosub_cpu_time = metrics[ 1, :, :, 1 ]
-    old_robosub_iteration_count = metrics[ 1, :, :, 2 ]
-
-    # save to csv
-    np.savetxt( "new_robosub_action_count.csv", new_robosub_action_count, delimiter="," )
-    np.savetxt( "new_robosub_cpu_time.csv", new_robosub_cpu_time, delimiter="," )
-    np.savetxt( "new_robosub_iteration_count.csv", new_robosub_iteration_count, delimiter="," )
-    np.savetxt( "old_robosub_action_count.csv", old_robosub_action_count, delimiter="," )
-    np.savetxt( "old_robosub_cpu_time.csv", old_robosub_cpu_time, delimiter="," )
-    np.savetxt( "old_robosub_iteration_count.csv", old_robosub_iteration_count, delimiter="," )
+    # N = 1000
+    # P = 2
+    # M = 1000
+    # metrics = np.ndarray( (P, N, M, 3) )
+    #
+    # print( metrics.shape )
+    # args = [ ]
+    # for i in range( P ):
+    #     for j in range( N ):
+    #         for k in range( M ):
+    #             args.append( (i, j, k) )
+    #
+    # # with cProfile.Profile() as pr:
+    # # for exp_set in args:
+    # #     run_experiment( *exp_set )
+    #
+    # # pr.print_stats()
+    #
+    # with Pool( processes=cpu_count() ) as pool:
+    #     output = pool.starmap_async( run_experiment, args, chunksize=1 )
+    #     while True:
+    #         if output.ready():
+    #             break
+    #         print( str( round( 100 - 100 * output._number_left / len( args ), 3 ) ) + " %" )
+    #         time.sleep( 60 )
+    # for exp in output.get():
+    #     metrics[ exp[ 0 ] ] = np.asarray( exp[ 1 ] )
+    #
+    # new_robosub_action_count = metrics[ 0, :, :, 0 ]
+    # new_robosub_cpu_time = metrics[ 0, :, :, 1 ]
+    # new_robosub_iteration_count = metrics[ 0, :, :, 2 ]
+    # old_robosub_action_count = metrics[ 1, :, :, 0 ]
+    # old_robosub_cpu_time = metrics[ 1, :, :, 1 ]
+    # old_robosub_iteration_count = metrics[ 1, :, :, 2 ]
+    #
+    # # save to csv
+    # np.savetxt( "new_robosub_action_count.csv", new_robosub_action_count, delimiter="," )
+    # np.savetxt( "new_robosub_cpu_time.csv", new_robosub_cpu_time, delimiter="," )
+    # np.savetxt( "new_robosub_iteration_count.csv", new_robosub_iteration_count, delimiter="," )
+    # np.savetxt( "old_robosub_action_count.csv", old_robosub_action_count, delimiter="," )
+    # np.savetxt( "old_robosub_cpu_time.csv", old_robosub_cpu_time, delimiter="," )
+    # np.savetxt( "old_robosub_iteration_count.csv", old_robosub_iteration_count, delimiter="," )
 
     # load csv
     new_robosub_action_count = np.genfromtxt( "new_robosub_action_count.csv", delimiter="," )
@@ -98,10 +98,42 @@ if __name__ == '__main__':
     old_robosub_iteration_count = np.genfromtxt( "old_robosub_iteration_count.csv", delimiter="," )
 
     P = 2
-    N, M = new_robosub_action_count.shape
+    N, M = new_robosub_iteration_count.shape
+
+
     plt.scatter( np.mean( old_robosub_action_count, axis=1 ), np.mean( new_robosub_action_count, axis=1 ) )
+    x = np.asarray( [ *range( int( min( np.min( np.mean( old_robosub_action_count, axis=1 ) ),
+                                        np.min( np.mean( new_robosub_action_count, axis=1 ) ) ) ) - 1,
+                              int( max( np.max( np.mean( old_robosub_action_count, axis=1 ) ),
+                                        np.max( np.mean( new_robosub_action_count, axis=1 ) ) ) ) + 2 ) ] )
+    plt.plot( x, x, color="black", linestyle="dashed" )
     plt.gca().set_aspect( 'equal', adjustable='box' )
+    plt.xlabel( "Mean Old Action Count" )
+    plt.ylabel( "Mean New Action Count" )
+    plt.title( "Robosub Domain" )
     plt.show()
+
+    plt.scatter( np.mean( old_robosub_cpu_time, axis=1 ), np.mean( new_robosub_cpu_time, axis=1 ) )
+    x = np.asarray( [ *range( 0, 7 ) ] ) / 100
+    plt.plot( x, x, color="black", linestyle="dashed" )
+    plt.gca().set_aspect( 'equal', adjustable='box' )
+    plt.xlabel( "Mean Old CPU Time (s)" )
+    plt.ylabel( "Mean New CPU Time (s)" )
+    plt.title( "Robosub Domain" )
+    plt.show()
+
+
+    plt.scatter( np.mean( old_robosub_iteration_count, axis=1 ), np.mean( new_robosub_iteration_count, axis=1 ) )
+    x = np.asarray( [ *range( int( min( np.min( np.mean( old_robosub_iteration_count, axis=1 ) ), np.min( np.mean( new_robosub_iteration_count, axis=1 ) ) ) ) - 1,
+                              int( max( np.max( np.mean( old_robosub_iteration_count, axis=1 ) ), np.max( np.mean( new_robosub_iteration_count, axis=1 ) ) ) ) + 2 ) ] )
+    plt.plot( x, x, color="black", linestyle="dashed" )
+    plt.gca().set_aspect( 'equal', adjustable='box' )
+    plt.xlabel( "Mean Old Iteration Count" )
+    plt.ylabel( "Mean New Iteration Count" )
+    plt.title( "Robosub Domain")
+    plt.show()
+
+
 
 
 """

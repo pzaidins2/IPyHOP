@@ -10,7 +10,7 @@ from ipyhop.actions import Actions
 from ipyhop.planner import IPyHOP
 from ipyhop.planner_old import IPyHOP_Old
 from ipyhop.mc_executor import MonteCarloExecutor
-from networkx import dfs_preorder_nodes
+from networkx import dfs_preorder_nodes, dfs_successors
 import numpy as np
 
 
@@ -52,6 +52,9 @@ class Actor:
         plan_impossible = False
         plan_success = False
         exec_index = 0
+        if len( [ *self.planner.sol_tree.nodes ] ) == 1:
+            plan_impossible = True
+            raise ("No plan is possible...")
         while not ( plan_impossible or plan_success ):
             # execute until success or failure
             # print("EXECUTE START")
@@ -103,10 +106,10 @@ class Actor:
                 else:
                     raise( "Invalid Planner" )
                 did_replan = True
-                if self.planner.sol_tree.nodes[ 0 ][ "status" ] == "O":
+
+                if len( [ *self.planner.sol_tree.nodes ] ) == 1:
                     plan_impossible = True
-                    if verbose >= 1:
-                        print( "No plan is possible...")
+                    raise( "No plan is possible...")
                     break
                 else:
                     if verbose >= 2:

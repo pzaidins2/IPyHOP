@@ -131,7 +131,7 @@ def main():
     c_2 = "black"
     plt.figure(0)
     ax = plt.subplot( 3, 1, 1 )
-    title = "40% Failure Rate in Rovers Domain"
+    title = "20% Failure Rate in Rovers Domain"
     plt.title( title )
     # plt.bar( x, new_mean_iteration_count, yerr=new_err_iteration_count, width=bar_width, label="new" )
     # plt.bar( x + bar_width, old_mean_iteration_count, yerr=old_err_iteration_count, width=bar_width, label="old"  )
