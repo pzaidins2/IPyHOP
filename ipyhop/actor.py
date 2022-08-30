@@ -6,12 +6,10 @@ File Description: File used for definition of actor
 # ******************************************    Libraries to be imported    ****************************************** #
 from typing import List, Union, Tuple, Optional
 from ipyhop.state import State
-from ipyhop.actions import Actions
 from ipyhop.planner import IPyHOP
-from ipyhop.planner_old import IPyHOP_Old
+from examples.robosub.data.planner_old import IPyHOP_Old
 from ipyhop.mc_executor import MonteCarloExecutor
-from networkx import dfs_preorder_nodes, dfs_successors
-import numpy as np
+from networkx import dfs_preorder_nodes
 
 
 # ******************************************    Class Declaration Start     ****************************************** #

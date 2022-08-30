@@ -8,7 +8,7 @@ from examples.openstacks.domain.actions import actions
 from examples.openstacks.domain.methods import methods
 from examples.openstacks.domain.deviations import deviation_handler
 from ipyhop import IPyHOP
-from ipyhop.planner_old import IPyHOP_Old
+from examples.robosub.data.planner_old import IPyHOP_Old
 from ipyhop.actor import Actor
 from ipyhop.mc_executor import MonteCarloExecutor
 import os
@@ -17,8 +17,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from multiprocessing import Pool, cpu_count
-import random
-import cProfile
+
 
 def run_experiment( i, j, k, problem_file_path ):
     problem_file = open( problem_file_path, "r" )

@@ -8,12 +8,9 @@ from examples.satellite.domain.actions import actions
 from examples.satellite.domain.methods import methods
 from examples.satellite.domain.deviations import deviation_handler
 from ipyhop import IPyHOP, State
-from ipyhop.planner_old import IPyHOP_Old
+from examples.robosub.data.planner_old import IPyHOP_Old
 from ipyhop.mulitgoal import MultiGoal
-from ipyhop.actor import Actor
-from ipyhop.mc_executor import MonteCarloExecutor
 import re
-import os
 from functools import partial
 from networkx import dfs_preorder_nodes
 from ipyhop.plotter import planar_plot

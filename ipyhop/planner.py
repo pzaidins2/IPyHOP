@@ -41,6 +41,7 @@ class IPyHOP(object):
         self.blacklist = set()
         self.iterations = None
         self.id_counter = 0
+        self.node_expansions = 0
 
         self._verbose = 0
 
@@ -167,6 +168,7 @@ class IPyHOP(object):
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _node_refine(self, curr_node_id: int, parent_node_id: int, _iter: int ):
+        self.node_expansions += 1
         curr_node = self.sol_tree.nodes[curr_node_id]
         if 'state' in curr_node:
             # If curr_node already has a value for state, it means that the algorithm backtracked to this node.

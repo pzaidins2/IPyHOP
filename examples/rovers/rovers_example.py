@@ -8,14 +8,13 @@ from examples.rovers.domain.actions import actions
 from examples.rovers.domain.methods import methods
 from examples.rovers.domain.deviations import deviation_handler
 from ipyhop import IPyHOP, State
-from ipyhop.planner_old import IPyHOP_Old
 from ipyhop.mulitgoal import MultiGoal
 from ipyhop.actor import Actor
 from ipyhop.mc_executor import MonteCarloExecutor
 import re
 import os
 from functools import partial
-from itertools import product
+
 
 # ******************************************        Helper Functions        ****************************************** #
 
