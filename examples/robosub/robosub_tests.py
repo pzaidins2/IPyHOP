@@ -8,13 +8,12 @@ from examples.robosub.domain.robosub_mod_actions import actions
 from examples.robosub.domain.robosub_mod_methods import methods
 from examples.robosub.problem.robosub_mod_prob_gen import StateSampler
 from ipyhop import IPyHOP
-from examples.robosub.data.planner_old import IPyHOP_Old
+from ipyhop.planner_old import IPyHOP_Old
 from ipyhop.actor import Actor
 from ipyhop.mc_executor import MonteCarloExecutor
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-from multiprocessing import Pool, cpu_count
 
 
 def run_experiment( i, j, k ):
@@ -113,6 +112,21 @@ if __name__ == '__main__':
 
     P = 2
     N, M = new_robosub_iteration_count.shape
+
+    print( np.mean( (np.mean( new_robosub_action_cost, axis=1 ) - np.mean( old_robosub_action_cost, axis=1 )) / np.mean(
+        old_robosub_action_cost, axis=1 ) ) )
+    print(
+        2 * np.std( (np.mean( new_robosub_action_cost, axis=1 ) - np.mean( old_robosub_action_cost, axis=1 )) / np.mean(
+            old_robosub_action_cost, axis=1 ) ) / np.sqrt( N ) )
+    print( np.mean(
+        (np.mean( new_robosub_node_expansions, axis=1 ) - np.mean( old_robosub_node_expansions, axis=1 )) / np.mean(
+            old_robosub_node_expansions, axis=1 ) ) )
+    print( 2 * np.std(
+        (np.mean( new_robosub_node_expansions, axis=1 ) - np.mean( old_robosub_node_expansions, axis=1 )) / np.mean(
+            old_robosub_node_expansions, axis=1 ) ) / np.sqrt( N ) )
+    print( np.mean(
+        (np.mean( new_robosub_cpu_time, axis=1 ) - np.mean( old_robosub_cpu_time, axis=1 )) / np.mean(
+            old_robosub_cpu_time, axis=1 ) ) )
 
     plt.scatter( np.mean( old_robosub_action_cost, axis=1 ), np.mean( new_robosub_action_cost, axis=1 ) )
     x = np.asarray( [ min( np.min( np.mean( old_robosub_action_cost, axis=1 ) ),

@@ -8,7 +8,7 @@ from examples.satellite.domain.actions import actions
 from examples.satellite.domain.methods import methods
 from examples.satellite.domain.deviations import deviation_handler
 from ipyhop import IPyHOP, State
-from examples.robosub.data.planner_old import IPyHOP_Old
+from ipyhop.planner_old import IPyHOP_Old
 from ipyhop.mulitgoal import MultiGoal
 import re
 from functools import partial

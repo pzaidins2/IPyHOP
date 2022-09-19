@@ -110,12 +110,12 @@ if __name__ == '__main__':
     # normalize results by problem
     normalized_results = 3 * [ 0 ]
 
-    # linear
-    for i in range( len( domains ) ):
-        r = results[ i ]
-        r_max = np.max( r, axis = ( 0, 1, 3 ) )[ np.newaxis, np.newaxis, :, np.newaxis, : ]
-        r_min = np.min( r, axis = ( 0, 1, 3 ) )[ np.newaxis, np.newaxis, :, np.newaxis, : ]
-        normalized_results[ i ] = ( r - r_min ) / ( r_max - r_min + 1E-10 )
+    # # linear
+    # for i in range( len( domains ) ):
+    #     r = results[ i ]
+    #     r_max = np.max( r, axis = ( 0, 1, 3 ) )[ np.newaxis, np.newaxis, :, np.newaxis, : ]
+    #     r_min = np.min( r, axis = ( 0, 1, 3 ) )[ np.newaxis, np.newaxis, :, np.newaxis, : ]
+    #     normalized_results[ i ] = ( r - r_min ) / ( r_max - r_min + 1E-10 )
 
     # # z-score
     # for i in range( len( domains ) ):
@@ -124,60 +124,69 @@ if __name__ == '__main__':
     #     r_std = np.std( r, axis = ( 0, 1, 3 ) )[ np.newaxis, np.newaxis, :, np.newaxis, : ]
     #     normalized_results[ i ] = ( r - r_mean ) / ( r_std + 1E-10 )
 
+    # z-score (only dist of original)
+    for i in range( len( domains ) ):
+        r = results[ i ]
+        print(r.shape)
+        r_mean = np.mean( r, axis=(0, 3) )[ np.newaxis, 0, :, np.newaxis, : ]
+        print(r_mean.shape)
+        r_std = np.std( r, axis=(0, 3) )[ np.newaxis, 0, :, np.newaxis, : ]
+        normalized_results[ i ] = (r - r_mean) / (r_std + 1E-10)
+
     # # log
     # for i in range( len( domains ) ):
     #     r = results[ i ]
     #     normalized_results[ i ] = np.log( r + 1E-10 )
 
-    # plt.figure( 6 )
-    # plt.subplot( 3, 1, 1 )
-    # plt.title( "New Replanning Linear Scaled Change vs Error Rate" )
-    # for i in range( len( domains ) ):
-    #     plt.scatter( error_rates, np.mean( normalized_results[ i ][ :, 1, 0, :, : ], axis=( 1, 2 ) )
-    #                  - np.mean( normalized_results[ i ][ :, 0, 0, :, : ], axis=( 1, 2 ) ),
-    #                  )
-    # plt.legend( domains )
-    # plt.ylabel( "Normalized Action Count" )
-    # plt.grid()
-    # plt.subplot( 3, 1, 2 )
-    # for i in range( len( domains ) ):
-    #     plt.scatter( error_rates, np.mean( normalized_results[ i ][ :, 1, 1, :, : ], axis=( 1, 2 ) )
-    #                  - np.mean( normalized_results[ i ][ :, 0, 1, :, : ], axis=( 1, 2 ) ),
-    #                  )
-    # plt.ylabel( "Normalized CPU Time (s/s)" )
-    # plt.grid()
-    # plt.subplot( 3, 1, 3 )
-    # for i in range( len( domains ) ):
-    #     plt.scatter( error_rates, np.mean( normalized_results[ i ][ :, 1, 2, :, : ], axis=(1, 2) )
-    #                  - np.mean( normalized_results[ i ][ :, 0, 2, :, : ], axis=(1, 2) ),
-    #                  )
-    # plt.ylabel( "Normalized Iteration Count" )
-    # plt.xlabel( "Error Rates (%)")
-    # plt.grid()
-    # plt.show()
-
-    plt.figure( 7 )
-    index = 2
+    plt.figure( 6 )
     plt.subplot( 3, 1, 1 )
-    plt.title( "New Replanning Difference: " + domains[ index ] )
-    mean_diff = np.mean( normalized_results[ index ][ :, 1, :, :, : ], axis=( 2 ) ) \
-                     - np.mean( normalized_results[ index ][ :, 0, :, :, : ], axis=( 2 ) )
-    mean_std = np.std( normalized_results[ index ][ :, 1, :, :, : ], axis=(2) ) \
-                + np.std( normalized_results[ index ][ :, 0, :, :, : ], axis=(2) )
-    for i in range( Qs[ index ] ):
-        plt.plot( error_rates, mean_diff[ :, 0, i ] )
+    plt.title( "New Replanning Z-Score Scaled Change vs Error Rate" )
+    for i in range( len( domains ) ):
+        plt.scatter( error_rates, np.mean( normalized_results[ i ][ :, 1, 0, :, : ], axis=( 1, 2 ) )
+                     - np.mean( normalized_results[ i ][ :, 0, 0, :, : ], axis=( 1, 2 ) ),
+                     )
+    plt.legend( domains )
     plt.ylabel( "Normalized Action Count" )
-    plt.legend( [ *range( 1, Qs[ index ] + 1 ) ], ncol=Qs[ index ] // 2 )
+    plt.grid()
     plt.subplot( 3, 1, 2 )
-    for i in range( Qs[ index ] ):
-        plt.plot( error_rates, mean_diff[ :, 1, i ] )
+    for i in range( len( domains ) ):
+        plt.scatter( error_rates, np.mean( normalized_results[ i ][ :, 1, 1, :, : ], axis=( 1, 2 ) )
+                     - np.mean( normalized_results[ i ][ :, 0, 1, :, : ], axis=( 1, 2 ) ),
+                     )
     plt.ylabel( "Normalized CPU Time (s/s)" )
+    plt.grid()
     plt.subplot( 3, 1, 3 )
-    for i in range( Qs[ index ] ):
-        plt.plot( error_rates, mean_diff[ :, 2, i ] )
+    for i in range( len( domains ) ):
+        plt.scatter( error_rates, np.mean( normalized_results[ i ][ :, 1, 2, :, : ], axis=(1, 2) )
+                     - np.mean( normalized_results[ i ][ :, 0, 2, :, : ], axis=(1, 2) ),
+                     )
     plt.ylabel( "Normalized Iteration Count" )
-
+    plt.xlabel( "Error Rates (%)")
+    plt.grid()
     plt.show()
+
+    # plt.figure( 7 )
+    # index = 2
+    # plt.subplot( 3, 1, 1 )
+    # plt.title( "New Replanning Difference: " + domains[ index ] )
+    # mean_diff = np.mean( normalized_results[ index ][ :, 1, :, :, : ], axis=( 2 ) ) \
+    #                  - np.mean( normalized_results[ index ][ :, 0, :, :, : ], axis=( 2 ) )
+    # mean_std = np.std( normalized_results[ index ][ :, 1, :, :, : ], axis=(2) ) \
+    #             + np.std( normalized_results[ index ][ :, 0, :, :, : ], axis=(2) )
+    # for i in range( Qs[ index ] ):
+    #     plt.plot( error_rates, mean_diff[ :, 0, i ] )
+    # plt.ylabel( "Normalized Action Count" )
+    # plt.legend( [ *range( 1, Qs[ index ] + 1 ) ], ncol=Qs[ index ] // 2 )
+    # plt.subplot( 3, 1, 2 )
+    # for i in range( Qs[ index ] ):
+    #     plt.plot( error_rates, mean_diff[ :, 1, i ] )
+    # plt.ylabel( "Normalized CPU Time (s/s)" )
+    # plt.subplot( 3, 1, 3 )
+    # for i in range( Qs[ index ] ):
+    #     plt.plot( error_rates, mean_diff[ :, 2, i ] )
+    # plt.ylabel( "Normalized Iteration Count" )
+    #
+    # plt.show()
 
     # fig = plt.figure( 8 )
     # ax = fig.add_subplot( projection="3d" )
@@ -275,6 +284,34 @@ if __name__ == '__main__':
     # plt.ylabel( "Normalized Iteration Count" )
     # ax.set_xticks( x )
     # plt.show()
+
+    plt.figure( 8 )
+    plt.subplot( 3, 1, 1 )
+    plt.title( "New Replanning Z-Score Scaled Change vs Error Rate" )
+    for i in range( len( domains ) ):
+        plt.scatter( error_rates, np.mean( normalized_results[ i ][ :, 1, 0, :, : ], axis=( 1, 2 ) )
+                     - np.mean( normalized_results[ i ][ :, 0, 0, :, : ], axis=( 1, 2 ) ),
+                     )
+    plt.legend( domains )
+    plt.ylabel( "Normalized Action Count" )
+    plt.grid()
+    plt.subplot( 3, 1, 2 )
+    for i in range( len( domains ) ):
+        plt.scatter( error_rates, np.mean( normalized_results[ i ][ :, 1, 1, :, : ], axis=( 1, 2 ) )
+                     - np.mean( normalized_results[ i ][ :, 0, 1, :, : ], axis=( 1, 2 ) ),
+                     )
+    plt.ylabel( "Normalized CPU Time (s/s)" )
+    plt.grid()
+    plt.subplot( 3, 1, 3 )
+    for i in range( len( domains ) ):
+        plt.scatter( error_rates, np.mean( normalized_results[ i ][ :, 1, 2, :, : ], axis=(1, 2) )
+                     - np.mean( normalized_results[ i ][ :, 0, 2, :, : ], axis=(1, 2) ),
+                     )
+    plt.ylabel( "Normalized Iteration Count" )
+    plt.xlabel( "Error Rates (%)")
+    plt.grid()
+    plt.show()
+
 
 
 """

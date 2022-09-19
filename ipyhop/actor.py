@@ -7,7 +7,7 @@ File Description: File used for definition of actor
 from typing import List, Union, Tuple, Optional
 from ipyhop.state import State
 from ipyhop.planner import IPyHOP
-from examples.robosub.data.planner_old import IPyHOP_Old
+from ipyhop.planner_old import IPyHOP_Old
 from ipyhop.mc_executor import MonteCarloExecutor
 from networkx import dfs_preorder_nodes
 

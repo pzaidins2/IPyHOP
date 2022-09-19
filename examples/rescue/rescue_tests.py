@@ -8,13 +8,12 @@ from examples.rescue.domain.rescue_actions import actions
 from examples.rescue.domain.rescue_methods import methods
 from examples.rescue.problem.rescue_prob_gen import StateSampler
 from ipyhop import IPyHOP
-from examples.robosub.data.planner_old import IPyHOP_Old
+from ipyhop.planner_old import IPyHOP_Old
 from ipyhop.actor import Actor
 from ipyhop.mc_executor import MonteCarloExecutor
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-from multiprocessing import Pool, cpu_count
 
 
 def run_experiment( i, j, k ):
@@ -137,6 +136,7 @@ if __name__ == '__main__':
     print( np.mean( (new_fail_rate != 0) & (new_fail_rate != 1) ) )
     print( np.mean( (old_fail_rate != 0) & (old_fail_rate != 1) ) )
     print( old_fail_rate[ (old_fail_rate != 0) & (old_fail_rate != 1) ] )
+    print("\n")
 
     # filter out failed problems
     # neither had failures
@@ -151,6 +151,17 @@ if __name__ == '__main__':
     old_rescue_cpu_time = old_rescue_cpu_time[ shared_pass ]
     old_rescue_iteration_count = old_rescue_iteration_count[ shared_pass ]
     old_rescue_node_expansions = old_rescue_node_expansions[ shared_pass ]
+
+    print( np.mean( ( np.mean( new_rescue_action_cost, axis=1 ) - np.mean( old_rescue_action_cost, axis=1 ) ) / np.mean( old_rescue_action_cost, axis=1 ) ) )
+    print( 2 * np.std( (np.mean( new_rescue_action_cost, axis=1 ) - np.mean( old_rescue_action_cost, axis=1 )) / np.mean(
+        old_rescue_action_cost, axis=1 ) ) / np.sqrt( N ) )
+    print( np.mean( ( np.mean( new_rescue_node_expansions, axis=1 ) - np.mean( old_rescue_node_expansions, axis=1 ) ) / np.mean( old_rescue_node_expansions, axis=1 ) ) )
+    print( 2 * np.std(
+        (np.mean( new_rescue_node_expansions, axis=1 ) - np.mean( old_rescue_node_expansions, axis=1 )) / np.mean(
+            old_rescue_node_expansions, axis=1 ) ) / np.sqrt( N ) )
+    print( np.mean(
+        (np.mean( new_rescue_cpu_time, axis=1 ) - np.mean( old_rescue_cpu_time, axis=1 )) / np.mean(
+            old_rescue_cpu_time, axis=1 ) ) )
 
     P = 2
     N, M = new_rescue_iteration_count.shape
