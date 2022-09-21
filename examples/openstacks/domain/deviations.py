@@ -14,17 +14,51 @@ from typing import List, Dict, Set
 from examples.satellite.domain.actions import type_check
 import random
 from functools import partial
+from networkx import dfs_preorder_nodes
 
 # satellite deviation handler
-def deviation_handler( act_tuple, state, rigid ):
-    deviation_operators = [
-        # original says this can make unfixable plan, but still present and no work around given
-        # d_unmake_product,
-        d_unship_order
-    ]
-    d_operator = random.choice( deviation_operators )
-    d_operator = partial( d_operator, rigid=rigid )
-    return d_operator( state )
+# initialization must have original solution plan and a deviation must occur exactly once
+class deviation_handler( ):
+
+    def __init__( self, init_state, actions, planner, rigid ):
+        self.init_state = init_state
+        self.actions = actions
+        self.rigid = rigid
+        self.planner = planner
+        self.deviation_operators = [
+            # original says this can make unfixable plan, but still present and no work around given
+            # d_unmake_product,
+            d_unship_order
+        ]
+        self.deviation_operators = [ partial( d_operator, rigid=self.rigid ) for d_operator in self.deviation_operators ]
+
+    def determine_deviation( self ):
+        # find all valid deviations in original plan
+        # get nodes in preorder
+        sol_tree = self.planner.sol_tree
+        # filter to actions
+        nodes = [ *filter( lambda x: sol_tree.nodes[ x ][ "type" ] == "A", dfs_preorder_nodes( sol_tree, source=0 ) ) ]
+        act_deviation_pairs = []
+        state = self.init_state
+        for node in nodes:
+            curr_node = sol_tree.nodes[ node ]
+            for d_operator in self.deviation_operators:
+                for deviation_state in d_operator( state.copy() ):
+                    act_deviation_pairs.append( ( curr_node[ "info" ], deviation_state ) )
+            act_name = curr_node[ "info" ][ 0 ]
+            act_arg = curr_node[ "info" ][ 1: ]
+            state = self.actions.action_dict[ act_name ]( state, *act_arg )
+        chosen_pair = random.choice( act_deviation_pairs )
+        self.chosen_pair = chosen_pair
+        self.has_deviated = False
+
+    def __call__( self, act_tuple, state ):
+        # print( (act_tuple, self.chosen_pair[ 0 ]) )
+        if act_tuple == self.chosen_pair[ 0 ] and not self.has_deviated:
+            self.has_deviated = True
+            return self.chosen_pair[ 1 ]
+        else:
+            return state
 
 def d_unmake_product( state, rigid ):
     made = state.made
@@ -37,8 +71,7 @@ def d_unmake_product( state, rigid ):
     for p in products:
         if made[ p ] and all([ not( shipped[ o ] ) for o in included_in[ p ] ] ):
             state.made[ p ] = False
-            break
-    return state
+            yield state
 
 def d_unship_order( state, rigid ):
     shipped = state.shipped
@@ -54,8 +87,7 @@ def d_unship_order( state, rigid ):
                 state.started[ o ] = False
                 state.shipped[ o ] = False
                 state.waiting[ o ] = True
-                break
-    return state
+                yield state
 
 
 

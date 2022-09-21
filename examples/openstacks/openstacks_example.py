@@ -78,10 +78,9 @@ def init_openstacks( pddl_str, actions, methods, deviation_handler ):
     methods.multigoal_method_dict.update(
         { l: [ partial( m, rigid=rigid ) for m in ms ] for l, ms in methods.multigoal_method_dict.items() } )
     actions.action_dict.update( { l: partial( a, rigid=rigid ) for l, a in actions.action_dict.items() } )
-    deviation_handler = partial( deviation_handler, rigid=rigid )
 
     goal_a.goal_tag = "mg_plan"
-    return state_0, goal_a, deviation_handler
+    return state_0, goal_a, rigid
 # ******************************************        Main Program Start       ***************************************** #
 def main():
     # while True:
@@ -89,18 +88,18 @@ def main():
     #         if "pddl" not in problem_file_name:
     #             continue
     #         print( problem_file_name )
-            problem_file_name = "problems/p30.pddl"
+            problem_file_name = "problems/p10.pddl"
             problem_file = open( problem_file_name, "r" )
             problem_str = problem_file.read()
             problem_file.close()
 
             planner = IPyHOP( methods, actions )
-            state_0, goal_a, dev_hand= init_openstacks( problem_str, actions, methods, deviation_handler )
+            state_0, goal_a, rigid = init_openstacks( problem_str, actions, methods, deviation_handler )
             print( state_0 )
             print( goal_a )
-            mc_executor = MonteCarloExecutor( actions, dev_hand )
+            mc_executor = MonteCarloExecutor( actions, deviation_handler( state_0.copy(), actions, planner, rigid ) )
             actor = Actor( planner, mc_executor )
-            history = actor.complete_to_do( state_0, [ goal_a ] )
+            history = actor.complete_to_do( state_0, [ goal_a ],verbose=3 )
             print( history )
 
 # ******************************************        Main Program End        ****************************************** #
