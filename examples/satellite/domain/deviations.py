@@ -26,21 +26,25 @@ from typing import List, Dict, Set
 from examples.satellite.domain.actions import type_check
 import random
 from functools import partial
+from itertools import product
+from examples.openstacks.domain.deviations import shopfixer_deviation_handler
+from copy import deepcopy
 
-# satellite deviation handler
-def deviation_handler( act_tuple, state, rigid ):
-    deviation_operators = [
-        d_change_direction,
-        d_decalibration,
-        d_power_loss
-    ]
-    d_operator = random.choice( deviation_operators )
-    d_operator = partial( d_operator, rigid=rigid )
-    # print( act_tuple )
-    return d_operator( state )
+# sattelite deviation handler
+class deviation_handler( shopfixer_deviation_handler ):
+
+    def __init__( self, init_state, actions, planner, rigid ):
+        super().__init__( init_state, actions, planner, rigid )
+        self.deviation_operators = [
+            d_change_direction,
+            d_decalibration,
+            d_power_loss
+        ]
+        self.deviation_operators = [ partial( d_operator, rigid=self.rigid ) for d_operator in
+                                     self.deviation_operators ]
 
 # mutate random satellite pointing
-def d_change_direction( state, rigid ):
+def d_change_direction( act_tuple, state, rigid ):
     type_dict = rigid[ "type_dict" ]
     pointing = state.pointing
     satellites = type_dict[ "satellite" ]
@@ -53,27 +57,33 @@ def d_change_direction( state, rigid ):
         # select random direction other than satellite pointing
         d = pointing[ s ]
         directions = tuple( type_dict[ "direction" ] - { d } )
-        d_new = random.choice( directions )
-        # change satellite pointing
-        # print( ( "d_change_direction", s, d_new, d ) )
-        state.pointing[ s ] = d_new
-    return state
+        # d_new = random.choice( directions )
+        for d_new in directions:
+            # change satellite pointing
+            # print( ( "d_change_direction", s, d_new, d ) )
+            new_state = state.shallow_copy()
+            new_state.pointing = deepcopy( new_state.pointing )
+            new_state.pointing[ s ] = d_new
+            yield new_state
 
 # decalibrate random instrument
-def d_decalibration( state, rigid ):
+def d_decalibration( act_tuple, state, rigid ):
     type_dict = rigid[ "type_dict" ]
     instruments = type_dict[ "instrument" ]
     calibrated = state.calibrated
     calibrated_instruments = tuple( filter( lambda x: calibrated[ x ], instruments ) )
     # can only decalibrate calibrated instrument
-    if len( calibrated_instruments ) > 0:
-        decalibrated_instrument = random.choice( calibrated_instruments )
+    # if len( calibrated_instruments ) > 0:
+    #     decalibrated_instrument = random.choice( calibrated_instruments )
+    for decalibrated_instrument in calibrated_instruments:
         # print( ( "d_decalibration", decalibrated_instrument ) )
-        state.calibrated[ decalibrated_instrument ] = False
-    return state
+        new_state = state.shallow_copy()
+        new_state.calibrated = deepcopy( new_state.calibrated )
+        new_state.calibrated[ decalibrated_instrument ] = False
+        yield new_state
 
 # cause random powered instrument to lose power
-def d_power_loss( state, rigid ):
+def d_power_loss( act_tuple, state, rigid ):
     type_dict = rigid[ "type_dict" ]
     instruments = type_dict[ "instrument" ]
     satellites = type_dict[ "satellite" ]
@@ -81,16 +91,19 @@ def d_power_loss( state, rigid ):
     power_on = state.power_on
     power_on_instruments = tuple( filter( lambda x: power_on[ x ], instruments ) )
     # only powered on instruments can lose power
-    if len( power_on_instruments ) > 0:
-        power_loss_instrument = random.choice( power_on_instruments )
-        state.power_on[ power_loss_instrument ] = False
+    # if len( power_on_instruments ) > 0:
+    #     power_loss_instrument = random.choice( power_on_instruments )
+    for power_loss_instrument  in power_on_instruments:
         # set power avail for associated satellite
         for s in satellites:
             if power_loss_instrument in on_board[ s ]:
-                state.power_avail[ s ] = True
+                new_state = state.shallow_copy()
+                new_state.power_on = deepcopy( new_state.power_on )
+                new_state.power_on[ power_loss_instrument ] = False
+                new_state.power_avail = deepcopy( new_state.power_avail )
+                new_state.power_avail[ s ] = True
                 # print( ( "d_power_loss", power_loss_instrument ) )
-                break
-    return state
+                yield new_state
 
 
 # ******************************************    Helper Functions            ****************************************** #

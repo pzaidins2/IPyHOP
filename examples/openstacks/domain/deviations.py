@@ -15,42 +15,41 @@ from examples.satellite.domain.actions import type_check
 import random
 from functools import partial
 from networkx import dfs_preorder_nodes
+from copy import deepcopy
+import time
 
-# satellite deviation handler
 # initialization must have original solution plan and a deviation must occur exactly once
-class deviation_handler( ):
-
+class shopfixer_deviation_handler():
     def __init__( self, init_state, actions, planner, rigid ):
         self.init_state = init_state
         self.actions = actions
         self.rigid = rigid
         self.planner = planner
-        self.deviation_operators = [
-            # original says this can make unfixable plan, but still present and no work around given
-            # d_unmake_product,
-            d_unship_order
-        ]
-        self.deviation_operators = [ partial( d_operator, rigid=self.rigid ) for d_operator in self.deviation_operators ]
+        self.determine_deviation_time = 0
 
     def determine_deviation( self ):
+        start = time.process_time()
         # find all valid deviations in original plan
         # get nodes in preorder
         sol_tree = self.planner.sol_tree
         # filter to actions
         nodes = [ *filter( lambda x: sol_tree.nodes[ x ][ "type" ] == "A", dfs_preorder_nodes( sol_tree, source=0 ) ) ]
         act_deviation_pairs = []
-        state = self.init_state
+        state = self.init_state.copy()
+        # trqaverse plan getting all valid deviation at each stage
         for node in nodes:
             curr_node = sol_tree.nodes[ node ]
             for d_operator in self.deviation_operators:
-                for deviation_state in d_operator( state.copy() ):
+                for deviation_state in d_operator( curr_node[ "info" ], state ):
                     act_deviation_pairs.append( ( curr_node[ "info" ], deviation_state ) )
             act_name = curr_node[ "info" ][ 0 ]
             act_arg = curr_node[ "info" ][ 1: ]
+
             state = self.actions.action_dict[ act_name ]( state, *act_arg )
         chosen_pair = random.choice( act_deviation_pairs )
         self.chosen_pair = chosen_pair
         self.has_deviated = False
+        self.determine_deviation_time = time.process_time() - start
 
     def __call__( self, act_tuple, state ):
         # print( (act_tuple, self.chosen_pair[ 0 ]) )
@@ -60,20 +59,38 @@ class deviation_handler( ):
         else:
             return state
 
-def d_unmake_product( state, rigid ):
+
+# openstacks deviation handler
+class deviation_handler( shopfixer_deviation_handler ):
+
+    def __init__( self, init_state, actions, planner, rigid ):
+        super().__init__( init_state, actions, planner, rigid )
+        self.deviation_operators = [
+            # original says this can make unfixable plan, but still present and no work around given
+            # d_unmake_product,
+            d_unship_order
+        ]
+        self.deviation_operators = [ partial( d_operator, rigid=self.rigid ) for d_operator in
+                                     self.deviation_operators ]
+
+
+
+def d_unmake_product( act_tuple, state, rigid ):
     made = state.made
     included_in = rigid[ "included_in" ]
     type_dict = rigid[ "type_dict" ]
     products = [ *type_dict[ "product" ] ]
     shipped = state.shipped
     # random product that is made and not shipped is unmade
-    random.shuffle( products )
+    # random.shuffle( products )
     for p in products:
         if made[ p ] and all([ not( shipped[ o ] ) for o in included_in[ p ] ] ):
-            state.made[ p ] = False
-            yield state
+            new_state = state.shallow_copy()
+            new_state.made = deepcopy( new_state.made )
+            new_state.made[ p ] = False
+            yield new_state
 
-def d_unship_order( state, rigid ):
+def d_unship_order( act_tuple, state, rigid ):
     shipped = state.shipped
     stacks_open = state.stacks_open
     max_stacks = rigid[ "max_stacks" ]
@@ -81,13 +98,17 @@ def d_unship_order( state, rigid ):
     orders = [ *type_dict[ "order" ] ]
     # unship random order
     if stacks_open < max_stacks:
-        random.shuffle( orders )
+        # random.shuffle( orders )
         for o in orders:
             if shipped[ o ]:
-                state.started[ o ] = False
-                state.shipped[ o ] = False
-                state.waiting[ o ] = True
-                yield state
+                new_state = state.shallow_copy()
+                new_state.started = deepcopy( new_state.started )
+                new_state.shipped = deepcopy( new_state.shipped )
+                new_state.waiting = deepcopy( new_state.waiting )
+                new_state.started[ o ] = False
+                new_state.shipped[ o ] = False
+                new_state.waiting[ o ] = True
+                yield new_state
 
 
 

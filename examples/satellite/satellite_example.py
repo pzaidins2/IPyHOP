@@ -8,17 +8,17 @@ from examples.satellite.domain.actions import actions
 from examples.satellite.domain.methods import methods
 from examples.satellite.domain.deviations import deviation_handler
 from ipyhop import IPyHOP, State
-from ipyhop.planner_old import IPyHOP_Old
 from ipyhop.mulitgoal import MultiGoal
+from ipyhop.actor import Actor
+from ipyhop.mc_executor import MonteCarloExecutor
 import re
+import os
 from functools import partial
-from networkx import dfs_preorder_nodes
-from ipyhop.plotter import planar_plot
 
 # ******************************************        Helper Functions        ****************************************** #
 
 # create sat pyhop problem
-def init_sat( pddl_str, actions, methods, deviation_handler ):
+def init_sat( pddl_str, actions, methods ):
     # create intial state
     state_0 = State("state_0")
     object_re = re.compile("(\w+) - (\w+)")
@@ -84,31 +84,6 @@ def init_sat( pddl_str, actions, methods, deviation_handler ):
             state_dict["power_avail"][ sat ] = True
         else:
             state_dict["power_avail"][sat] = False
-    # # nil input equality
-    # nil_equality_list = nil_equality_re.findall(init_str)
-    # for rel, v in nil_equality_list:
-    #     if rel == "data-stored":
-    #         state_0.data_stored = float(v)
-    #     elif rel == "fuel-used":
-    #         state_0.fuel_used = float(v)
-    # # single input equality
-    # uni_equality_list = uni_equality_re.findall(init_str)
-    # state_0.data_capacity = dict()
-    # state_0.fuel = dict()
-    # for rel, k, v in uni_equality_list:
-    #     if rel == "data_capacity":
-    #         rel_dict = state_0.data_capacity
-    #     elif rel == "fuel":
-    #         rel_dict = state_0.fuel
-    #     rel_dict[k] = float(v)
-    # # double input equality
-    # bi_equality_list = bi_equality_re.findall(init_str)
-    # state_dict["data"] = dict()
-    # state_0.data = state_dict["data"]
-    # state_dict["slew_time"] = dict()
-    # state_0.slew_time = state_dict["slew_time"]
-    # for rel, k_1, k_2, v in bi_equality_list:
-    #     state_dict[rel][(k_1,k_2)] = float(v)
     # misc
     state_0.calibrated = { ins:False for ins in state_dict[ "instrument" ] }
     state_0.power_on = { ins:False for ins in state_dict[ "instrument" ] }
@@ -139,144 +114,29 @@ def init_sat( pddl_str, actions, methods, deviation_handler ):
     methods.multigoal_method_dict.update(
         { l: [ partial( m, rigid=rigid ) for m in ms ] for l, ms in methods.multigoal_method_dict.items() } )
     actions.action_dict.update( { l: partial( a, rigid=rigid ) for l, a in actions.action_dict.items() } )
-    deviation_handler = partial( deviation_handler, rigid=rigid )
-    return state_0, goal_a, deviation_handler
+
+    return state_0, goal_a, rigid
 # ******************************************        Main Program Start       ***************************************** #
 def main():
     # while True:
-        # for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
-        # #     problem_file_name = "problems/p05.pddl"
-        #     if "pddl" not in problem_file_name:
-        #         continue
-        #     print( problem_file_name )
+        for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
+            if "pddl" not in problem_file_name:
+                continue
+            # print( problem_file_name )
+            # problem_file_name = "problems/p15.pddl"
+            problem_file = open( problem_file_name, "r" )
+            problem_str = problem_file.read()
+            problem_file.close()
 
-    # problem_file_name = "problems/p03.pddl"
-    # problem_file = open( problem_file_name, "r" )
-    # problem_str = problem_file.read()
-    # problem_file.close()
-    # # while True:
-    # planner = IPyHOP( methods, actions )
-    # # planner_old = IPyHOP( methods, actions )
-    # state_0, goal_a, dev_hand=  init_sat( problem_str, actions, methods, deviation_handler )
-    # mc_executor = MonteCarloExecutor( actions, dev_hand )
-    # actor = Actor( planner, mc_executor )
-    # history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
-
-    # actor_old = Actor( planner_old, mc_executor )
-    # new_avg = 0
-    # old_avg = 0
-    # N = 0
-    # while True:
-    #     planner = IPyHOP( methods, actions )
-    #     state_0, goal_a, dev_hand = init_sat( problem_str, actions, methods, deviation_handler )
-    #     mc_executor = MonteCarloExecutor( actions, dev_hand )
-    #     actor = Actor( planner, mc_executor )
-    #
-    #     history = actor.complete_to_do( state_0, [ goal_a ] )
-    #     new_avg = ( N * new_avg + len( history ) ) / ( N + 1 )
-    #
-    #     planner_old = IPyHOP( methods, actions )
-    #     state_0, goal_a, dev_hand = init_sat( problem_str, actions, methods, deviation_handler )
-    #     mc_executor = MonteCarloExecutor( actions, dev_hand )
-    #     actor_old = Actor( planner_old, mc_executor )
-    #
-    #     history_old = actor_old.complete_to_do( state_0, [ goal_a ] )
-    #     old_avg = ( N * old_avg + len( history_old ) ) / ( N + 1 )
-    #     N += 1
-    #     print( "N: " + str( N ) )
-    #     print( "Old Avg: " + str( old_avg ) )
-    #     print( "New Avg: " + str( new_avg ) )
-    #     print( "Difference: " + str( new_avg - old_avg ) )
-
-    # # simple replan
-    # problem_file_name = "problems/p01.pddl"
-    # problem_file = open( problem_file_name, "r" )
-    # problem_str = problem_file.read()
-    # problem_file.close()
-    # planner = IPyHOP_Old( methods, actions )
-    # state_0, goal_a, dev_hand=  init_sat( problem_str, actions, methods, deviation_handler )
-    # plan_0 = planner.plan( state_0, [goal_a ], verbose=3 )
-    # fail_index = plan_0.index( ('take_image', 'satellite0', 'Phenomenon4', 'instrument0', 'thermograph0') )
-    # print( fail_index )
-    # assert plan_0 == [('switch_on', 'instrument0', 'satellite0'), ('turn_to', 'satellite0', 'GroundStation2', 'Phenomenon6'), ('calibrate', 'satellite0', 'instrument0', 'GroundStation2'), ('turn_to', 'satellite0', 'Phenomenon4', 'GroundStation2'), ('take_image', 'satellite0', 'Phenomenon4', 'instrument0', 'thermograph0'), ('turn_to', 'satellite0', 'Star5', 'Phenomenon4'), ('take_image', 'satellite0', 'Star5', 'instrument0', 'thermograph0'), ('turn_to', 'satellite0', 'Phenomenon6', 'Star5'), ('take_image', 'satellite0', 'Phenomenon6', 'instrument0', 'thermograph0')]
-    # # planar_plot( planner.sol_tree, 0 )
-    # state_list = planner.simulate( state_0 )
-    # state_1 = state_list[ fail_index ]
-    # state_1.pointing[ 'satellite0' ] = 'Phenomenon3'
-    # print( state_1 )
-    # if type( planner ) == IPyHOP:
-    #     plan_1, _ = planner.replan( state_1.copy(), fail_index, verbose=3 )
-    #     assert plan_1 == [ ('switch_on', 'instrument0', 'satellite0'),
-    #                        ('turn_to', 'satellite0', 'GroundStation2', 'Phenomenon6'),
-    #                        ('calibrate', 'satellite0', 'instrument0', 'GroundStation2'),
-    #                        ('turn_to', 'satellite0', 'Phenomenon4', 'Phenomenon3'),
-    #                        ('take_image', 'satellite0', 'Phenomenon4', 'instrument0', 'thermograph0'),
-    #                        ('turn_to', 'satellite0', 'Star5', 'Phenomenon4'),
-    #                        ('take_image', 'satellite0', 'Star5', 'instrument0', 'thermograph0'),
-    #                        ('turn_to', 'satellite0', 'Phenomenon6', 'Star5'),
-    #                        ('take_image', 'satellite0', 'Phenomenon6', 'instrument0', 'thermograph0') ]
-    #
-    # else:
-    #     preorder_action_nodes = [ *filter( lambda x: planner.sol_tree.nodes[ x ][ "type" ] == "A",
-    #                                        dfs_preorder_nodes( planner.sol_tree, source=0 ) ) ]
-    #     fail_node_id = preorder_action_nodes[ fail_index ]
-    #     print( preorder_action_nodes )
-    #     plan_1, _ = planner.replan( state_1.copy(), fail_node_id, verbose=3 )
-    #     assert plan_1 == [('turn_to', 'satellite0', 'Star5', 'Phenomenon3'), ('take_image', 'satellite0', 'Star5', 'instrument0', 'thermograph0'), ('turn_to', 'satellite0', 'Phenomenon4', 'Star5'), ('take_image', 'satellite0', 'Phenomenon4', 'instrument0', 'thermograph0'), ('turn_to', 'satellite0', 'Phenomenon6', 'Phenomenon4'), ('take_image', 'satellite0', 'Phenomenon6', 'instrument0', 'thermograph0')]
-    # print( plan_1 )
-    #
-    # complex replan
-    problem_file_name = "problems/p03.pddl"
-    problem_file = open( problem_file_name, "r" )
-    problem_str = problem_file.read()
-    problem_file.close()
-    planner = IPyHOP_Old( methods, actions )
-    state_0, goal_a, dev_hand = init_sat( problem_str, actions, methods, deviation_handler )
-    plan_0 = planner.plan( state_0, [ goal_a ], verbose=3 )
-    print( plan_0 )
-    assert plan_0 == [('switch_on', 'instrument3', 'satellite1'), ('calibrate', 'satellite1', 'instrument3', 'Star0'),
-                      ('turn_to', 'satellite1', 'Star3', 'Star0'),
-                      ('take_image', 'satellite1', 'Star3', 'instrument3', 'infrared0'),
-                      ('turn_to', 'satellite1', 'Star4', 'Star3'),
-                      ('take_image', 'satellite1', 'Star4', 'instrument3', 'spectrograph2'),
-                      ('turn_to', 'satellite1', 'Phenomenon5', 'Star4'),
-                      ('take_image', 'satellite1', 'Phenomenon5', 'instrument3', 'spectrograph2'),
-                      ('turn_to', 'satellite1', 'Phenomenon7', 'Phenomenon5'),
-                      ('take_image', 'satellite1', 'Phenomenon7', 'instrument3', 'spectrograph2'),
-                      ('turn_to', 'satellite0', 'Phenomenon5', 'Star4')]
-    fail_index = plan_0.index( ('take_image', 'satellite1', 'Star4', 'instrument3', 'spectrograph2') )
-    print( fail_index )
-    planar_plot( planner.sol_tree, 0 )
-    state_list = planner.simulate( state_0 )
-    state_1 = state_list[ fail_index ]
-    state_1.pointing[ 'satellite0' ] = 'Star3'
-    state_1.calibrated[ 'instrument3' ] = False
-    print( state_1 )
-    if type( planner ) == IPyHOP:
-        plan_1, _ = planner.replan( state_1.copy(), fail_index, verbose=3 )
-        # assert plan_1 == [ ('switch_on', 'instrument0', 'satellite0'),
-        #                    ('turn_to', 'satellite0', 'GroundStation2', 'Phenomenon6'),
-        #                    ('calibrate', 'satellite0', 'instrument0', 'GroundStation2'),
-        #                    ('turn_to', 'satellite0', 'Phenomenon4', 'Phenomenon3'),
-        #                    ('take_image', 'satellite0', 'Phenomenon4', 'instrument0', 'thermograph0'),
-        #                    ('turn_to', 'satellite0', 'Star5', 'Phenomenon4'),
-        #                    ('take_image', 'satellite0', 'Star5', 'instrument0', 'thermograph0'),
-        #                    ('turn_to', 'satellite0', 'Phenomenon6', 'Star5'),
-        #                    ('take_image', 'satellite0', 'Phenomenon6', 'instrument0', 'thermograph0') ]
-
-    else:
-        preorder_action_nodes = [ *filter( lambda x: planner.sol_tree.nodes[ x ][ "type" ] == "A",
-                                           dfs_preorder_nodes( planner.sol_tree, source=0 ) ) ]
-        fail_node_id = preorder_action_nodes[ fail_index ]
-        print( preorder_action_nodes )
-        plan_1, _ = planner.replan( state_1.copy(), fail_node_id, verbose=3 )
-        # assert plan_1 == [ ('turn_to', 'satellite0', 'Star5', 'Phenomenon3'),
-        #                    ('take_image', 'satellite0', 'Star5', 'instrument0', 'thermograph0'),
-        #                    ('turn_to', 'satellite0', 'Phenomenon4', 'Star5'),
-        #                    ('take_image', 'satellite0', 'Phenomenon4', 'instrument0', 'thermograph0'),
-        #                    ('turn_to', 'satellite0', 'Phenomenon6', 'Phenomenon4'),
-        #                    ('take_image', 'satellite0', 'Phenomenon6', 'instrument0', 'thermograph0') ]
-    print( plan_1 )
+            planner = IPyHOP( methods, actions )
+            state_0, goal_a, rigid = init_sat( problem_str, actions, methods )
+            print( state_0 )
+            print( goal_a )
+            mc_executor = MonteCarloExecutor( actions, deviation_handler( state_0.copy(), actions, planner, rigid ) )
+            actor = Actor( planner, mc_executor )
+            history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
+            if len( history ) == 0:
+                raise ("FAILED PLANNING")
 
 
 

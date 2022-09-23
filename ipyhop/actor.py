@@ -37,9 +37,7 @@ class Actor:
         history = []
         # find plan to complete to_do_list
         plan = self.planner.plan(initial_state, to_do_list, verbose=verbose)
-        # got to be a better way to distinguish between callable class and function
-        if str( type( self.executor.deviation_handler ) ) != "<class 'function'>":
-            self.executor.deviation_handler.determine_deviation()
+
         # print( self.planner.iterations )
         if verbose >= 1:
             print("Initial plan created\n")
@@ -47,6 +45,10 @@ class Actor:
                 print("Plan is:\n" + str( plan ) + "\n")
             print("Executing plan...\n")
         curr_state = initial_state
+
+        # got to be a better way to distinguish between callable class and function
+        if str( type( self.executor.deviation_handler ) ) != "<class 'function'>":
+            self.executor.deviation_handler.determine_deviation()
         # act on plan until completion or failure, replanning has needed
         did_replan = False
         plan_impossible = False

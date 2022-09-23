@@ -10,19 +10,24 @@ from examples.satellite.domain.actions import type_check
 import random
 from functools import partial
 from itertools import product
+from examples.openstacks.domain.deviations import shopfixer_deviation_handler
+from copy import deepcopy
 
-# satellite deviation handler
-def deviation_handler( act_tuple, state, rigid ):
-    deviation_operators = [
-        d_lost_soil_analysis,
-        d_lost_rock_analysis,
-        d_lost_image,
-        d_decalibration,
-        d_cannot_see_to_calibrate,
-        d_cannot_see_to_take_image
-    ]
-    d_operator = random.choice( deviation_operators )
-    return d_operator( act_tuple, state, rigid )
+# rovers deviation handler
+class deviation_handler( shopfixer_deviation_handler ):
+
+    def __init__( self, init_state, actions, planner, rigid ):
+        super().__init__( init_state, actions, planner, rigid )
+        self.deviation_operators = [
+            d_lost_soil_analysis,
+            d_lost_rock_analysis,
+            d_lost_image,
+            d_decalibration,
+            d_cannot_see_to_calibrate,
+            d_cannot_see_to_take_image
+        ]
+        self.deviation_operators = [ partial( d_operator, rigid=self.rigid ) for d_operator in
+                                     self.deviation_operators ]
 
 def d_lost_soil_analysis( act_tuple, state, rigid ):
     soil_analysis = [ *state.have_soil_analysis.items() ]
@@ -32,13 +37,15 @@ def d_lost_soil_analysis( act_tuple, state, rigid ):
     # lose random soil sample
     for r, wp_set in soil_analysis:
         wp_list = [ *wp_set ]
-        random.shuffle( wp_list )
+        # random.shuffle( wp_list )
         for wp in wp_list:
             if not( communicated_soil_data[ wp ] ) and wp in have_soil_analysis[ r ]:
-                state.have_soil_analysis[ r ].remove( wp )
-                state.at_soil_sample.add( wp )
-                break
-    return state
+                new_state = state.shallow_copy()
+                new_state.have_soil_analysis = deepcopy( new_state.have_soil_analysis )
+                new_state.have_soil_analysis[ r ].remove( wp )
+                new_state.at_soil_sample = deepcopy( new_state.at_soil_sample )
+                new_state.at_soil_sample.add( wp )
+                yield new_state
 
 def d_lost_rock_analysis( act_tuple, state, rigid ):
     rock_analysis = [ *state.have_rock_analysis.items() ]
@@ -48,13 +55,15 @@ def d_lost_rock_analysis( act_tuple, state, rigid ):
     # lose random rock sample
     for r, wp_set in rock_analysis:
         wp_list = [ *wp_set ]
-        random.shuffle( wp_list )
+        # random.shuffle( wp_list )
         for wp in wp_list:
             if not( communicated_rock_data[ wp ] ) and wp in have_rock_analysis[ r ]:
-                state.have_rock_analysis[ r ].remove( wp )
-                state.at_rock_sample.add( wp )
-                break
-    return state
+                new_state = state.shallow_copy()
+                new_state.have_rock_analysis = deepcopy( new_state.have_rock_analysis )
+                new_state.have_rock_analysis[ r ].remove( wp )
+                new_state.at_rock_sample = deepcopy( new_state.at_rock_sample )
+                new_state.at_rock_sample.add( wp )
+                yield new_state
 
 def d_lost_image( act_tuple, state, rigid ):
     type_dict = rigid[ "type_dict"]
@@ -66,32 +75,36 @@ def d_lost_image( act_tuple, state, rigid ):
     on_board = rigid[ "on_board" ]
     communicated_image_data = state.communicated_image_data
     rovers_list = [ *rovers ]
-    random.shuffle( rovers_list )
+    # random.shuffle( rovers_list )
     objectives_list = [ *objectives ]
-    random.shuffle( objectives_list )
+    # random.shuffle( objectives_list )
     modes_list = [ *modes ]
-    random.shuffle( modes_list )
+    # random.shuffle( modes_list )
     cameras_list = [ *cameras ]
-    random.shuffle( cameras_list )
+    # random.shuffle( cameras_list )
 
     quad_tuples = product( rovers_list, objectives_list, modes_list, cameras_list )
     # lose random image
     for r, o, m, i in quad_tuples:
         image = ( o, m )
         if on_board[ i ] == r and image in have_image[ r ] and not communicated_image_data[ image ]:
-            state.have_image[ r ].remove( image )
-            state.calibrated[ ( i, r ) ] = False
-            break
-    return state
+            new_state = state.shallow_copy()
+            new_state.have_image = deepcopy( new_state.have_image )
+            new_state.have_image[ r ].remove( image )
+            new_state.calibrated = deepcopy( new_state.calibrated )
+            new_state.calibrated[ ( i, r ) ] = False
+            yield new_state
 
 def d_decalibration( act_tuple, state, rigid ):
     calibrated = state.calibrated
     # decalibrate randomly
     calibrated_pairs = [ *filter( lambda x: calibrated[ x ], calibrated.keys() ) ]
-    if len( calibrated_pairs ) > 0:
-        calibrated_pair = random.choice( calibrated_pairs )
-        state.calibrated[ calibrated_pair ] = False
-    return state
+    for calibrated_pair in calibrated_pairs:
+        # calibrated_pair = random.choice( calibrated_pairs )
+        new_state = state.shallow_copy()
+        new_state.calibrated = deepcopy( new_state.calibrated )
+        new_state.calibrated[ calibrated_pair ] = False
+        yield new_state
 
 def d_cannot_see_to_calibrate( act_tuple, state, rigid ):
     act_name =  act_tuple[ 0 ]
@@ -123,8 +136,10 @@ def d_cannot_see_to_calibrate( act_tuple, state, rigid ):
                 r_i_m = product( rovers, { o }, modes )
                 have_image_check = map( lambda x: ( x[ 1 ], x[ 2 ] ) in have_image[ x[ 0 ] ], r_i_m )
                 if not any( have_image_check ):
-                    state.visible_from[ o ].remove( w )
-    return state
+                    new_state = state.shallow_copy()
+                    new_state.visible_from = deepcopy( new_state.visible_from )
+                    new_state.visible_from[ o ].remove( w )
+                    yield new_state
 
 def d_cannot_see_to_take_image( act_tuple, state, rigid ):
     act_name =  act_tuple[ 0 ]
@@ -152,15 +167,11 @@ def d_cannot_see_to_take_image( act_tuple, state, rigid ):
             w in visible_from_o and image not in have_image[ r ]:
             # avoid making objective unreachable
             if len( visible_from_o ) > 1:
-                state.visible_from[ o ].remove( w )
-    return state
+                new_state = state.shallow_copy()
+                new_state.visible_from = deepcopy( new_state.visible_from )
+                new_state.visible_from[ o ].remove( w )
+                yield new_state
 
-
-
-
-
-
-    return state
 
 # ******************************************    Helper Functions            ****************************************** #
 
