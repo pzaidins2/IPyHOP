@@ -28,7 +28,7 @@ class shopfixer_deviation_handler():
         self.determine_deviation_time = 0
 
     def determine_deviation( self ):
-        start = time.process_time()
+        start = time.process_time_ns()
         # find all valid deviations in original plan
         # get nodes in preorder
         sol_tree = self.planner.sol_tree
@@ -49,7 +49,7 @@ class shopfixer_deviation_handler():
         chosen_pair = random.choice( act_deviation_pairs )
         self.chosen_pair = chosen_pair
         self.has_deviated = False
-        self.determine_deviation_time = time.process_time() - start
+        self.determine_deviation_time = time.process_time_ns() - start
 
     def __call__( self, act_tuple, state ):
         # print( (act_tuple, self.chosen_pair[ 0 ]) )

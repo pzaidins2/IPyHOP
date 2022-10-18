@@ -35,9 +35,9 @@ def run_experiment( i, j, k, problem_file_path ):
 
     # planning and acting
     try:
-        start_time = time.process_time()
+        start_time = time.process_time_ns()
         history = actor.complete_to_do( state_0, [ goal_a ] )
-        time_elapsed = time.process_time() - start_time
+        time_elapsed = time.process_time_ns() - start_time
         # metrics
         iteration_count = planner.iterations
         cpu_time = time_elapsed - dev_hand.determine_deviation_time
@@ -49,60 +49,60 @@ def run_experiment( i, j, k, problem_file_path ):
         return ( ( i, j, k ), ( -1, -1, -1 ) )
 
 def main():
-    problem_file_names = filter( lambda x: "pddl" in x, os.listdir( "problems" ) )
-    problem_paths = [ "problems/" + x for x in problem_file_names ]
-    N = 1000
-    M = len( problem_paths )
-    P = 2
-    metrics = np.ndarray( ( P, N, M, 3 ) )
-
-    print( metrics.shape )
-    args = []
-    for i in range( P ):
-        for j in range( N ):
-            for k in range( M ):
-                args.append( ( i, j, k, problem_paths[ k ] ) )
-    # i = 1
-    # for j in range( N ):
-    #     for k in range( M ):
-    #         args.append( (i, j, k, problem_paths[ k ]) )
-    # with cProfile.Profile() as pr:
-    #     for exp_set in args:
-    #         run_experiment( *exp_set )
+    # problem_file_names = filter( lambda x: "pddl" in x, os.listdir( "problems" ) )
+    # problem_paths = [ "problems/" + x for x in problem_file_names ]
+    # N = 1000
+    # M = len( problem_paths )
+    # P = 2
+    # metrics = np.ndarray( ( P, N, M, 3 ) )
     #
-    # pr.print_stats()
-
-    with Pool( processes=cpu_count() ) as pool:
-        output = pool.starmap_async( run_experiment, args, chunksize=1 )
-        while True:
-            if output.ready():
-                break
-            print( str( round( 100 - 100 * output._number_left / len( args ), 3 ) ) + " %" )
-            time.sleep( 60 )
-    for exp in output.get():
-        metrics[ exp[ 0 ] ] = np.asarray( exp[1] )
-
-    new_iteration_count = metrics[ 0, :, :, 0 ]
-    new_cpu_time = metrics[ 0, :, :, 1 ]
-    new_action_count = metrics[ 0, :, :, 2 ]
-    old_iteration_count = metrics[ 1, :, :, 0 ]
-    old_cpu_time = metrics[ 1, :, :, 1 ]
-    old_action_count = metrics[ 1, :, :, 2 ]
-
-    # save to csv
-    np.savetxt( "new_rovers_iteration_count.csv", new_iteration_count, delimiter="," )
-    np.savetxt( "new_rovers_cpu_time.csv", new_cpu_time, delimiter="," )
-    np.savetxt( "new_rovers_action_count.csv", new_action_count, delimiter="," )
-    np.savetxt( "old_rovers_iteration_count.csv", old_iteration_count, delimiter="," )
-    np.savetxt( "old_rovers_cpu_time.csv", old_cpu_time, delimiter="," )
-    np.savetxt( "old_rovers_action_count.csv", old_action_count, delimiter="," )
+    # print( metrics.shape )
+    # args = []
+    # for i in range( P ):
+    #     for j in range( N ):
+    #         for k in range( M ):
+    #             args.append( ( i, j, k, problem_paths[ k ] ) )
+    # # i = 1
+    # # for j in range( N ):
+    # #     for k in range( M ):
+    # #         args.append( (i, j, k, problem_paths[ k ]) )
+    # # with cProfile.Profile() as pr:
+    # #     for exp_set in args:
+    # #         run_experiment( *exp_set )
+    # #
+    # # pr.print_stats()
+    #
+    # with Pool( processes=cpu_count() ) as pool:
+    #     output = pool.starmap_async( run_experiment, args, chunksize=1 )
+    #     while True:
+    #         if output.ready():
+    #             break
+    #         print( str( round( 100 - 100 * output._number_left / len( args ), 3 ) ) + " %" )
+    #         time.sleep( 60 )
+    # for exp in output.get():
+    #     metrics[ exp[ 0 ] ] = np.asarray( exp[1] )
+    #
+    # new_iteration_count = metrics[ 0, :, :, 0 ]
+    # new_cpu_time = metrics[ 0, :, :, 1 ]
+    # new_action_count = metrics[ 0, :, :, 2 ]
+    # old_iteration_count = metrics[ 1, :, :, 0 ]
+    # old_cpu_time = metrics[ 1, :, :, 1 ]
+    # old_action_count = metrics[ 1, :, :, 2 ]
+    #
+    # # save to csv
+    # np.savetxt( "new_rovers_iteration_count.csv", new_iteration_count, delimiter="," )
+    # np.savetxt( "new_rovers_cpu_time.csv", new_cpu_time, delimiter="," )
+    # np.savetxt( "new_rovers_action_count.csv", new_action_count, delimiter="," )
+    # np.savetxt( "old_rovers_iteration_count.csv", old_iteration_count, delimiter="," )
+    # np.savetxt( "old_rovers_cpu_time.csv", old_cpu_time, delimiter="," )
+    # np.savetxt( "old_rovers_action_count.csv", old_action_count, delimiter="," )
 
     # load csv
     new_iteration_count = np.genfromtxt( "new_rovers_iteration_count.csv", delimiter="," )
-    new_cpu_time = np.genfromtxt( "new_rovers_cpu_time.csv", delimiter="," )
+    new_cpu_time = np.genfromtxt( "new_rovers_cpu_time.csv", delimiter="," ) / 1E9
     new_action_count = np.genfromtxt( "new_rovers_action_count.csv", delimiter="," )
     old_iteration_count = np.genfromtxt( "old_rovers_iteration_count.csv", delimiter="," )
-    old_cpu_time = np.genfromtxt( "old_rovers_cpu_time.csv", delimiter="," )
+    old_cpu_time = np.genfromtxt( "old_rovers_cpu_time.csv", delimiter="," ) / 1E9
     old_action_count = np.genfromtxt( "old_rovers_action_count.csv", delimiter="," )
 
     N, M = new_iteration_count.shape
@@ -131,11 +131,11 @@ def main():
     print( new_iteration_count )
     bar_width = 0.2
     c_0 = "red"
-    c_1 = "blue"
+    c_1 = "cyan"
     c_2 = "black"
     plt.figure(0)
     ax = plt.subplot( 3, 1, 1 )
-    title = "Failure Rate in Rovers Domain"
+    title = "Rovers Domain"
     plt.title( title )
     # plt.bar( x, new_mean_iteration_count, yerr=new_err_iteration_count, width=bar_width, label="new" )
     # plt.bar( x + bar_width, old_mean_iteration_count, yerr=old_err_iteration_count, width=bar_width, label="old"  )
@@ -208,7 +208,7 @@ def main():
     plt.ylabel( "Action Count" )
     ax.set_xticks( x )
     plt.legend()
-    plt.savefig( title + ".png")
+    plt.savefig( title + ".svg")
     plt.show()
 
 

@@ -36,9 +36,9 @@ def run_experiment( i, j, k, problem_file_path ):
 
     # planning and acting
     try:
-        start_time = time.process_time()
+        start_time = time.process_time_ns()
         history = actor.complete_to_do( state_0, [ goal_a ] )
-        time_elapsed = time.process_time() - start_time
+        time_elapsed = time.process_time_ns() - start_time
         # metrics
         iteration_count = planner.iterations
         cpu_time = time_elapsed - dev_hand.determine_deviation_time
@@ -109,10 +109,10 @@ def main():
 
     # mean
     new_mean_iteration_count = np.mean( new_iteration_count, axis=0 )
-    new_mean_cpu_time = np.mean( new_cpu_time, axis=0 )
+    new_mean_cpu_time = np.mean( new_cpu_time, axis=0 ) / 1E9
     new_mean_action_count = np.mean( new_action_count, axis=0 )
     old_mean_iteration_count = np.mean( old_iteration_count, axis=0 )
-    old_mean_cpu_time = np.mean( old_cpu_time, axis=0 )
+    old_mean_cpu_time = np.mean( old_cpu_time, axis=0 ) / 1E9
     old_mean_action_count = np.mean( old_action_count, axis=0 )
 
     print( np.mean( ( new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time ) )
@@ -131,7 +131,7 @@ def main():
     print( new_iteration_count )
     bar_width = 0.2
     c_0 = "red"
-    c_1 = "blue"
+    c_1 = "cyan"
     c_2 = "black"
     plt.figure(0)
     ax = plt.subplot( 3, 1, 1 )
