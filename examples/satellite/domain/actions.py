@@ -151,12 +151,12 @@ def take_image( state, s, d, i, m, rigid ):
 actions = Actions()
 actions.declare_actions( [ turn_to, switch_on, switch_off, calibrate, take_image ] )
 
-p_fail = 0.2
+p_fail = 1
 action_probability = {
-    "turn_to": [ 1, 0 ],
-    "switch_on": [ 1, 0 ],
-    "switch_off": [ 1, 0 ],
-    "calibrate": [ 1, 0 ],
+    "turn_to": [ 1 - p_fail, p_fail ],
+    "switch_on": [ 1 - p_fail, p_fail ],
+    "switch_off": [ 1 - p_fail, p_fail ],
+    "calibrate": [ 1 - p_fail, p_fail ],
     "take_image": [ 1 - p_fail, p_fail ]
 }
 

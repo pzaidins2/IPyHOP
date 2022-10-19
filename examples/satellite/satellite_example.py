@@ -118,7 +118,7 @@ def init_sat( pddl_str, actions, methods ):
     return state_0, goal_a, rigid
 # ******************************************        Main Program Start       ***************************************** #
 def main():
-    # while True:
+    while True:
         for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
             if "pddl" not in problem_file_name:
                 continue
@@ -132,7 +132,7 @@ def main():
             state_0, goal_a, rigid = init_sat( problem_str, actions, methods )
             print( state_0 )
             print( goal_a )
-            mc_executor = MonteCarloExecutor( actions, deviation_handler( state_0.copy(), actions, planner, rigid ) )
+            mc_executor = MonteCarloExecutor( actions, deviation_handler( actions, planner, rigid ) )
             actor = Actor( planner, mc_executor )
             history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
             if len( history ) == 0:

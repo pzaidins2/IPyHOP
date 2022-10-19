@@ -29,7 +29,7 @@ def run_experiment( i, j, k, problem_file_path ):
     planner_type = planner_type[ i ]
     planner = planner_type( methods, actions )
     state_0, goal_a, rigid = init_sat( problem_str, actions, methods)
-    dev_hand = deviation_handler( state_0.copy(), actions, planner, rigid )
+    dev_hand = deviation_handler( actions, planner, rigid )
     mc_executor = MonteCarloExecutor( actions, dev_hand )
     actor = Actor( planner, mc_executor )
 
@@ -103,12 +103,16 @@ def main():
 
     N, M = new_iteration_count.shape
 
+    # ns to s
+    new_cpu_time /= 1E9
+    old_cpu_time /= 1E9
+
     # mean
     new_mean_iteration_count = np.mean( new_iteration_count, axis=0 )
-    new_mean_cpu_time = np.mean( new_cpu_time, axis=0 ) / 1E9
+    new_mean_cpu_time = np.mean( new_cpu_time, axis=0 )
     new_mean_action_count = np.mean( new_action_count, axis=0 )
     old_mean_iteration_count = np.mean( old_iteration_count, axis=0 )
-    old_mean_cpu_time = np.mean( old_cpu_time, axis=0 ) / 1E9
+    old_mean_cpu_time = np.mean( old_cpu_time, axis=0 )
     old_mean_action_count = np.mean( old_action_count, axis=0 )
 
     print( np.mean( (new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time ) )

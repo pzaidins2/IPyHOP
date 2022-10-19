@@ -33,8 +33,8 @@ from copy import deepcopy
 # sattelite deviation handler
 class deviation_handler( shopfixer_deviation_handler ):
 
-    def __init__( self, init_state, actions, planner, rigid ):
-        super().__init__( init_state, actions, planner, rigid )
+    def __init__( self, actions, planner, rigid ):
+        super().__init__( actions, planner, rigid )
         self.deviation_operators = [
             d_change_direction,
             d_decalibration,
@@ -61,8 +61,7 @@ def d_change_direction( act_tuple, state, rigid ):
         for d_new in directions:
             # change satellite pointing
             # print( ( "d_change_direction", s, d_new, d ) )
-            new_state = state.shallow_copy()
-            new_state.pointing = deepcopy( new_state.pointing )
+            new_state = state.copy()
             new_state.pointing[ s ] = d_new
             yield new_state
 
@@ -77,8 +76,7 @@ def d_decalibration( act_tuple, state, rigid ):
     #     decalibrated_instrument = random.choice( calibrated_instruments )
     for decalibrated_instrument in calibrated_instruments:
         # print( ( "d_decalibration", decalibrated_instrument ) )
-        new_state = state.shallow_copy()
-        new_state.calibrated = deepcopy( new_state.calibrated )
+        new_state = state.copy()
         new_state.calibrated[ decalibrated_instrument ] = False
         yield new_state
 
@@ -97,10 +95,8 @@ def d_power_loss( act_tuple, state, rigid ):
         # set power avail for associated satellite
         for s in satellites:
             if power_loss_instrument in on_board[ s ]:
-                new_state = state.shallow_copy()
-                new_state.power_on = deepcopy( new_state.power_on )
+                new_state = state.copy()
                 new_state.power_on[ power_loss_instrument ] = False
-                new_state.power_avail = deepcopy( new_state.power_avail )
                 new_state.power_avail[ s ] = True
                 # print( ( "d_power_loss", power_loss_instrument ) )
                 yield new_state

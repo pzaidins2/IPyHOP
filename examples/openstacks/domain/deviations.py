@@ -42,6 +42,9 @@ class shopfixer_deviation_handler():
             act_name = act_inst[ 0 ]
             act_arg = act_inst[ 1: ]
             state = self.actions.action_dict[ act_name ]( state.copy(), *act_arg )
+            # this can happen if a previous deviation will cause a future failure
+            if state == None:
+                break
 
         chosen_pair = random.choice( act_deviation_pairs )
         self.chosen_pair = chosen_pair
