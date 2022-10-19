@@ -20,41 +20,40 @@ import time
 
 # initialization must have original solution plan and a deviation must occur exactly once
 class shopfixer_deviation_handler():
-    def __init__( self, init_state, actions, planner, rigid ):
-        self.init_state = init_state
+    def __init__( self, actions, planner, rigid ):
         self.actions = actions
         self.rigid = rigid
         self.planner = planner
         self.determine_deviation_time = 0
+        self.has_chosen = False
 
-    def determine_deviation( self ):
+    def determine_deviation( self, plan_index, plan, state ):
         start = time.process_time_ns()
         # find all valid deviations in original plan
-        # get nodes in preorder
-        sol_tree = self.planner.sol_tree
-        # filter to actions
-        nodes = [ *filter( lambda x: sol_tree.nodes[ x ][ "type" ] == "A", dfs_preorder_nodes( sol_tree, source=0 ) ) ]
+        # print( act_insts )
         act_deviation_pairs = []
-        state = self.init_state.copy()
         # trqaverse plan getting all valid deviation at each stage
-        for node in nodes:
-            curr_node = sol_tree.nodes[ node ]
+        for i, act_inst in enumerate( plan[ plan_index: ] ):
             for d_operator in self.deviation_operators:
-                for deviation_state in d_operator( curr_node[ "info" ], state ):
-                    act_deviation_pairs.append( ( curr_node[ "info" ], deviation_state ) )
-            act_name = curr_node[ "info" ][ 0 ]
-            act_arg = curr_node[ "info" ][ 1: ]
+                for deviation_state in d_operator( act_inst, state ):
+                    act_deviation_pairs.append( ( i + plan_index, deviation_state ) )
+                    # allow for no failure
+                    act_deviation_pairs.append( (None, None) )
+            act_name = act_inst[ 0 ]
+            act_arg = act_inst[ 1: ]
+            state = self.actions.action_dict[ act_name ]( state.copy(), *act_arg )
 
-            state = self.actions.action_dict[ act_name ]( state, *act_arg )
         chosen_pair = random.choice( act_deviation_pairs )
         self.chosen_pair = chosen_pair
-        self.has_deviated = False
-        self.determine_deviation_time = time.process_time_ns() - start
+        self.has_chosen = True
+        self.determine_deviation_time += time.process_time_ns() - start
 
-    def __call__( self, act_tuple, state ):
+    def __call__( self, plan_index, plan, state ):
         # print( (act_tuple, self.chosen_pair[ 0 ]) )
-        if act_tuple == self.chosen_pair[ 0 ] and not self.has_deviated:
-            self.has_deviated = True
+        if not( self.has_chosen ):
+            self.determine_deviation( plan_index, plan, state )
+        if plan_index == self.chosen_pair[ 0 ]:
+            self.has_chosen = False
             return self.chosen_pair[ 1 ]
         else:
             return state
@@ -63,8 +62,8 @@ class shopfixer_deviation_handler():
 # openstacks deviation handler
 class deviation_handler( shopfixer_deviation_handler ):
 
-    def __init__( self, init_state, actions, planner, rigid ):
-        super().__init__( init_state, actions, planner, rigid )
+    def __init__( self, actions, planner, rigid ):
+        super().__init__( actions, planner, rigid )
         self.deviation_operators = [
             # original says this can make unfixable plan, but still present and no work around given
             # d_unmake_product,
@@ -85,8 +84,7 @@ def d_unmake_product( act_tuple, state, rigid ):
     # random.shuffle( products )
     for p in products:
         if made[ p ] and all([ not( shipped[ o ] ) for o in included_in[ p ] ] ):
-            new_state = state.shallow_copy()
-            new_state.made = deepcopy( new_state.made )
+            new_state = state.copy()
             new_state.made[ p ] = False
             yield new_state
 
@@ -101,10 +99,7 @@ def d_unship_order( act_tuple, state, rigid ):
         # random.shuffle( orders )
         for o in orders:
             if shipped[ o ]:
-                new_state = state.shallow_copy()
-                new_state.started = deepcopy( new_state.started )
-                new_state.shipped = deepcopy( new_state.shipped )
-                new_state.waiting = deepcopy( new_state.waiting )
+                new_state = state.copy()
                 new_state.started[ o ] = False
                 new_state.shipped[ o ] = False
                 new_state.waiting[ o ] = True

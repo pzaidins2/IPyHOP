@@ -25,7 +25,7 @@ class MonteCarloExecutor(object):
         self.exec_list = [(None, state.copy())]
         deviation_handler = self.deviation_handler
         state_copy = state.copy()
-        for act_inst in plan:
+        for i, act_inst in enumerate( plan ):
             # print(act_inst)
             act_name = act_inst[0]
             act_params = act_inst[1:]
@@ -37,7 +37,7 @@ class MonteCarloExecutor(object):
                 result_state = act_func(state_copy, *act_params)
             else:
                 if deviation_handler != None:
-                    deviation_state = deviation_handler( (act_name, *act_params), state_copy )
+                    deviation_state = deviation_handler( i, plan, state_copy )
                     # print(self.exec_list)
                     self.exec_list[ -1 ] = (self.exec_list[ -1 ][ 0 ], deviation_state)
                     result_state = act_func( deviation_state, *act_params )

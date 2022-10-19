@@ -97,7 +97,7 @@ def main():
             state_0, goal_a, rigid = init_openstacks( problem_str, actions, methods )
             print( state_0 )
             print( goal_a )
-            mc_executor = MonteCarloExecutor( actions, deviation_handler( state_0.copy(), actions, planner, rigid ) )
+            mc_executor = MonteCarloExecutor( actions, deviation_handler( actions, planner, rigid ) )
             actor = Actor( planner, mc_executor )
             history = actor.complete_to_do( state_0, [ goal_a ],verbose=3 )
             print( history )

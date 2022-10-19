@@ -46,9 +46,6 @@ class Actor:
             print("Executing plan...\n")
         curr_state = initial_state
 
-        # got to be a better way to distinguish between callable class and function
-        if str( type( self.executor.deviation_handler ) ) != "<class 'function'>":
-            self.executor.deviation_handler.determine_deviation()
         # act on plan until completion or failure, replanning has needed
         did_replan = False
         plan_impossible = False
