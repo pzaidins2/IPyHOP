@@ -17,6 +17,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from multiprocessing import Pool, cpu_count
+from scipy import stats
 
 
 def run_experiment( i, j, k, problem_file_path ):
@@ -29,7 +30,7 @@ def run_experiment( i, j, k, problem_file_path ):
     planner_type = planner_type[ i ]
     planner = planner_type( methods, actions )
     state_0, goal_a, rigid = init_rovers( problem_str, actions, methods )
-    dev_hand = deviation_handler( state_0.copy(), actions, planner, rigid )
+    dev_hand = deviation_handler( actions, planner, rigid )
     mc_executor = MonteCarloExecutor( actions, dev_hand )
     actor = Actor( planner, mc_executor )
 
@@ -115,8 +116,18 @@ def main():
     old_mean_cpu_time = np.mean( old_cpu_time, axis=0 )
     old_mean_action_count = np.mean( old_action_count, axis=0 )
 
-    print( np.mean( (new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time ) )
-    print( np.mean( (new_mean_iteration_count- old_mean_iteration_count ) / old_mean_iteration_count ) )
+    # print( np.mean( (new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time ) )
+    # print( np.mean( (new_mean_iteration_count- old_mean_iteration_count ) / old_mean_iteration_count ) )
+    x = stats.ttest_ind( new_iteration_count, old_iteration_count, equal_var=False )
+    print( np.max( x.statistic ) )
+    print( np.mean( x.statistic ) )
+    print( np.max( x.pvalue ) )
+    print( np.mean( x.pvalue ) )
+    x = stats.ttest_ind( new_cpu_time, old_cpu_time, equal_var=False )
+    print( np.max( x.statistic ) )
+    print( np.mean( x.statistic ) )
+    print( np.max( x.pvalue ) )
+    print( np.mean( x.pvalue ) )
 
     # standard error
     new_err_iteration_count = np.std( new_iteration_count, axis=0 ) / np.sqrt( N )
@@ -128,90 +139,102 @@ def main():
 
     x = np.asarray( [ i + 1 for i in range( M ) ] )
 
-    print( new_iteration_count )
+    # print( new_iteration_count )
     bar_width = 0.2
     c_0 = "red"
     c_1 = "cyan"
     c_2 = "black"
-    plt.figure(0)
-    ax = plt.subplot( 3, 1, 1 )
-    title = "Rovers Domain"
-    plt.title( title )
-    # plt.bar( x, new_mean_iteration_count, yerr=new_err_iteration_count, width=bar_width, label="new" )
-    # plt.bar( x + bar_width, old_mean_iteration_count, yerr=old_err_iteration_count, width=bar_width, label="old"  )
-    bp_0 = ax.boxplot( new_iteration_count, positions=x - 1.1 * bar_width / 2, widths=bar_width,
-                        notch=True, labels=x, patch_artist=True,
-                        boxprops=dict( facecolor=c_0, color=c_0 ),
-                        capprops=dict( color=c_0 ),
-                        whiskerprops=dict( color=c_0 ),
-                        flierprops=dict( color=c_0, markeredgecolor=c_0 ),
-                        medianprops=dict( color=c_2 ),
-                 )
-    bp_1 = ax.boxplot( old_iteration_count, positions=x + 1.1 * bar_width / 2, widths=bar_width,
-                        notch=True, labels=x, patch_artist=True,
-                        boxprops=dict( facecolor=c_1, color=c_1 ),
-                        capprops=dict( color=c_1 ),
-                        whiskerprops=dict( color=c_1 ),
-                        flierprops=dict( color=c_1, markeredgecolor=c_1 ),
-                        medianprops=dict( color=c_2 ),
-                 )
+    # plt.figure(0)
+    # ax = plt.subplot( 3, 1, 1 )
+    # title = "Rovers Domain"
+    # plt.title( title )
+    # # plt.bar( x, new_mean_iteration_count, yerr=new_err_iteration_count, width=bar_width, label="new" )
+    # # plt.bar( x + bar_width, old_mean_iteration_count, yerr=old_err_iteration_count, width=bar_width, label="old"  )
+    # bp_0 = ax.boxplot( new_iteration_count, positions=x - 1.1 * bar_width / 2, widths=bar_width,
+    #                     notch=True, labels=x, patch_artist=True,
+    #                     boxprops=dict( facecolor=c_0, color=c_0 ),
+    #                     capprops=dict( color=c_0 ),
+    #                     whiskerprops=dict( color=c_0 ),
+    #                     flierprops=dict( color=c_0, markeredgecolor=c_0 ),
+    #                     medianprops=dict( color=c_2 ),
+    #              )
+    # bp_1 = ax.boxplot( old_iteration_count, positions=x + 1.1 * bar_width / 2, widths=bar_width,
+    #                     notch=True, labels=x, patch_artist=True,
+    #                     boxprops=dict( facecolor=c_1, color=c_1 ),
+    #                     capprops=dict( color=c_1 ),
+    #                     whiskerprops=dict( color=c_1 ),
+    #                     flierprops=dict( color=c_1, markeredgecolor=c_1 ),
+    #                     medianprops=dict( color=c_2 ),
+    #              )
+    # # plt.xlabel( "Problem #" )
+    # plt.ylabel( "Iteration Count")
+    # # plt.yscale( "log" )
+    # ax.set_xticks( x )
+    # ax.legend( [ bp_0[ "boxes" ][ 0 ], bp_1[ "boxes" ][ 0 ] ], [ "new", "old" ] )
+    #
+    # ax = plt.subplot( 3, 1, 2 )
+    # # plt.bar( x, new_mean_cpu_time, yerr=new_err_cpu_time, width=bar_width, label="new" )
+    # # plt.bar( x + bar_width, old_mean_cpu_time, yerr=old_err_cpu_time, width=bar_width, label="old" )
+    # bp_0 = ax.boxplot( new_cpu_time, positions=x - 1.1 * bar_width / 2, widths=bar_width,
+    #                    notch=True, labels=x, patch_artist=True,
+    #                    boxprops=dict( facecolor=c_0, color=c_0 ),
+    #                    capprops=dict( color=c_0 ),
+    #                    whiskerprops=dict( color=c_0 ),
+    #                    flierprops=dict( color=c_0, markeredgecolor=c_0 ),
+    #                    medianprops=dict( color=c_2 ),
+    #                    )
+    # bp_1 = ax.boxplot( old_cpu_time, positions=x + 1.1 * bar_width / 2, widths=bar_width,
+    #                    notch=True, labels=x, patch_artist=True,
+    #                    boxprops=dict( facecolor=c_1, color=c_1 ),
+    #                    capprops=dict( color=c_1 ),
+    #                    whiskerprops=dict( color=c_1 ),
+    #                    flierprops=dict( color=c_1, markeredgecolor=c_1 ),
+    #                    medianprops=dict( color=c_2 ),
+    #                    )
+    # # plt.xlabel( "Problem #" )
+    # plt.ylabel( "CPU Time (s)" )
+    # # plt.yscale( "log" )
+    # ax.set_xticks( x )
+    #
+    # ax = plt.subplot( 3, 1, 3 )
+    # # plt.bar( x, new_mean_action_count, yerr=new_err_action_count, width=bar_width, label="new" )
+    # # plt.bar( x + bar_width, old_mean_action_count, yerr=old_err_action_count, width=bar_width, label="old" )
+    # bp_0 = ax.boxplot( new_action_count, positions=x - 1.1 * bar_width / 2, widths=bar_width,
+    #                    notch=True, labels=x, patch_artist=True,
+    #                    boxprops=dict( facecolor=c_0, color=c_0 ),
+    #                    capprops=dict( color=c_0 ),
+    #                    whiskerprops=dict( color=c_0 ),
+    #                    flierprops=dict( color=c_0, markeredgecolor=c_0 ),
+    #                    medianprops=dict( color=c_2 ),
+    #                    )
+    # bp_1 = ax.boxplot( old_action_count, positions=x + 1.1 * bar_width / 2, widths=bar_width,
+    #                    notch=True, labels=x, patch_artist=True,
+    #                    boxprops=dict( facecolor=c_1, color=c_1 ),
+    #                    capprops=dict( color=c_1 ),
+    #                    whiskerprops=dict( color=c_1 ),
+    #                    flierprops=dict( color=c_1, markeredgecolor=c_1 ),
+    #                    medianprops=dict( color=c_2 ),
+    #                    )
     # plt.xlabel( "Problem #" )
-    plt.ylabel( "Iteration Count")
-    plt.yscale( "log" )
-    ax.set_xticks( x )
-    ax.legend( [ bp_0[ "boxes" ][ 0 ], bp_1[ "boxes" ][ 0 ] ], [ "new", "old" ] )
+    # plt.ylabel( "Action Count" )
+    # ax.set_xticks( x )
+    # plt.legend()
+    # # plt.savefig( title + ".png")
+    # plt.show()
 
-    ax = plt.subplot( 3, 1, 2 )
-    # plt.bar( x, new_mean_cpu_time, yerr=new_err_cpu_time, width=bar_width, label="new" )
-    # plt.bar( x + bar_width, old_mean_cpu_time, yerr=old_err_cpu_time, width=bar_width, label="old" )
-    bp_0 = ax.boxplot( new_cpu_time, positions=x - 1.1 * bar_width / 2, widths=bar_width,
-                       notch=True, labels=x, patch_artist=True,
-                       boxprops=dict( facecolor=c_0, color=c_0 ),
-                       capprops=dict( color=c_0 ),
-                       whiskerprops=dict( color=c_0 ),
-                       flierprops=dict( color=c_0, markeredgecolor=c_0 ),
-                       medianprops=dict( color=c_2 ),
-                       )
-    bp_1 = ax.boxplot( old_cpu_time, positions=x + 1.1 * bar_width / 2, widths=bar_width,
-                       notch=True, labels=x, patch_artist=True,
-                       boxprops=dict( facecolor=c_1, color=c_1 ),
-                       capprops=dict( color=c_1 ),
-                       whiskerprops=dict( color=c_1 ),
-                       flierprops=dict( color=c_1, markeredgecolor=c_1 ),
-                       medianprops=dict( color=c_2 ),
-                       )
-    # plt.xlabel( "Problem #" )
-    plt.ylabel( "CPU Time (s)" )
-    plt.yscale( "log" )
-    ax.set_xticks( x )
+    # plt.figure( 1 )
+    # plt.bar( x, (new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time,
+    #          yerr=np.sqrt( np.power( new_err_cpu_time / new_mean_cpu_time, 2 ) +
+    #                        np.power( old_err_cpu_time / old_mean_cpu_time, 2 ) ) )
+    # plt.show()
 
-    ax = plt.subplot( 3, 1, 3 )
-    # plt.bar( x, new_mean_action_count, yerr=new_err_action_count, width=bar_width, label="new" )
-    # plt.bar( x + bar_width, old_mean_action_count, yerr=old_err_action_count, width=bar_width, label="old" )
-    bp_0 = ax.boxplot( new_action_count, positions=x - 1.1 * bar_width / 2, widths=bar_width,
-                       notch=True, labels=x, patch_artist=True,
-                       boxprops=dict( facecolor=c_0, color=c_0 ),
-                       capprops=dict( color=c_0 ),
-                       whiskerprops=dict( color=c_0 ),
-                       flierprops=dict( color=c_0, markeredgecolor=c_0 ),
-                       medianprops=dict( color=c_2 ),
-                       )
-    bp_1 = ax.boxplot( old_action_count, positions=x + 1.1 * bar_width / 2, widths=bar_width,
-                       notch=True, labels=x, patch_artist=True,
-                       boxprops=dict( facecolor=c_1, color=c_1 ),
-                       capprops=dict( color=c_1 ),
-                       whiskerprops=dict( color=c_1 ),
-                       flierprops=dict( color=c_1, markeredgecolor=c_1 ),
-                       medianprops=dict( color=c_2 ),
-                       )
-    plt.xlabel( "Problem #" )
-    plt.ylabel( "Action Count" )
-    ax.set_xticks( x )
-    plt.legend()
-    plt.savefig( title + ".svg")
+    plt.figure(2)
+    plt.scatter(x,old_mean_cpu_time)
+    plt.scatter( x, new_mean_cpu_time )
+    plt.xticks(x)
+    plt.xlabel("Problem Number")
+    plt.ylabel("")
     plt.show()
-
-
 
 if __name__ == '__main__':
     try:

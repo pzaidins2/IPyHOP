@@ -18,6 +18,7 @@ import time
 import matplotlib.pyplot as plt
 from functools import partial
 from multiprocessing import Pool, cpu_count
+from scipy import stats
 
 
 def run_experiment( i, j, k, problem_file_path ):
@@ -117,8 +118,18 @@ def main():
     old_mean_cpu_time = np.mean( old_cpu_time, axis=0 )
     old_mean_action_count = np.mean( old_action_count, axis=0 )
 
-    print( np.mean( ( new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time ) )
-    print( np.mean( (new_mean_iteration_count - old_mean_iteration_count) / old_mean_iteration_count ) )
+    # print( np.mean( (new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time ) )
+    # print( np.mean( (new_mean_iteration_count- old_mean_iteration_count ) / old_mean_iteration_count ) )
+    x = stats.ttest_ind( new_iteration_count, old_iteration_count, equal_var=False )
+    print( np.max( x.statistic ) )
+    print( np.mean( x.statistic ) )
+    print( np.max( x.pvalue ) )
+    print( np.mean( x.pvalue ) )
+    x = stats.ttest_ind( new_cpu_time, old_cpu_time, equal_var=False )
+    print( np.max( x.statistic ) )
+    print( np.mean( x.statistic ) )
+    print( np.max( x.pvalue ) )
+    print( np.mean( x.pvalue ) )
 
     # standard error
     new_err_iteration_count = np.std( new_iteration_count, axis=0 ) / np.sqrt( N )
@@ -159,7 +170,7 @@ def main():
                  )
     # plt.xlabel( "Problem #" )
     plt.ylabel( "Iteration Count")
-    plt.yscale( "log" )
+    # plt.yscale( "log" )
     ax.set_xticks( x )
     ax.legend( [ bp_0[ "boxes" ][ 0 ], bp_1[ "boxes" ][ 0 ] ], [ "new", "old" ] )
 
@@ -184,7 +195,7 @@ def main():
                        )
     # plt.xlabel( "Problem #" )
     plt.ylabel( "CPU Time (s)" )
-    plt.yscale( "log" )
+    # plt.yscale( "log" )
     ax.set_xticks( x )
 
     ax = plt.subplot( 3, 1, 3 )
@@ -210,7 +221,13 @@ def main():
     plt.ylabel( "Action Count" )
     ax.set_xticks( x )
     plt.legend()
-    plt.savefig( title + ".png")
+    # plt.savefig( title + ".png")
+    # plt.show()
+
+    plt.figure( 1 )
+    plt.bar( x, ( new_mean_cpu_time - old_mean_cpu_time ) / old_mean_cpu_time,
+             yerr=np.sqrt( np.power( new_err_cpu_time / new_mean_cpu_time, 2 ) +
+                           np.power( old_err_cpu_time / old_mean_cpu_time, 2 ) ) )
     plt.show()
 
 

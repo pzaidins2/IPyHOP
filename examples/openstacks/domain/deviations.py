@@ -45,7 +45,7 @@ class shopfixer_deviation_handler():
             # this can happen if a previous deviation will cause a future failure
             if state == None:
                 break
-
+        act_deviation_pairs.append( (None, None) )
         chosen_pair = random.choice( act_deviation_pairs )
         self.chosen_pair = chosen_pair
         self.has_chosen = True

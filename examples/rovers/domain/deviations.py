@@ -16,8 +16,8 @@ from copy import deepcopy
 # rovers deviation handler
 class deviation_handler( shopfixer_deviation_handler ):
 
-    def __init__( self, init_state, actions, planner, rigid ):
-        super().__init__( init_state, actions, planner, rigid )
+    def __init__( self, actions, planner, rigid ):
+        super().__init__( actions, planner, rigid )
         self.deviation_operators = [
             d_lost_soil_analysis,
             d_lost_rock_analysis,
@@ -40,10 +40,8 @@ def d_lost_soil_analysis( act_tuple, state, rigid ):
         # random.shuffle( wp_list )
         for wp in wp_list:
             if not( communicated_soil_data[ wp ] ) and wp in have_soil_analysis[ r ]:
-                new_state = state.shallow_copy()
-                new_state.have_soil_analysis = deepcopy( new_state.have_soil_analysis )
+                new_state = state.copy()
                 new_state.have_soil_analysis[ r ].remove( wp )
-                new_state.at_soil_sample = deepcopy( new_state.at_soil_sample )
                 new_state.at_soil_sample.add( wp )
                 yield new_state
 
@@ -58,10 +56,8 @@ def d_lost_rock_analysis( act_tuple, state, rigid ):
         # random.shuffle( wp_list )
         for wp in wp_list:
             if not( communicated_rock_data[ wp ] ) and wp in have_rock_analysis[ r ]:
-                new_state = state.shallow_copy()
-                new_state.have_rock_analysis = deepcopy( new_state.have_rock_analysis )
+                new_state = state.copy()
                 new_state.have_rock_analysis[ r ].remove( wp )
-                new_state.at_rock_sample = deepcopy( new_state.at_rock_sample )
                 new_state.at_rock_sample.add( wp )
                 yield new_state
 
@@ -88,10 +84,8 @@ def d_lost_image( act_tuple, state, rigid ):
     for r, o, m, i in quad_tuples:
         image = ( o, m )
         if on_board[ i ] == r and image in have_image[ r ] and not communicated_image_data[ image ]:
-            new_state = state.shallow_copy()
-            new_state.have_image = deepcopy( new_state.have_image )
+            new_state = state.copy()
             new_state.have_image[ r ].remove( image )
-            new_state.calibrated = deepcopy( new_state.calibrated )
             new_state.calibrated[ ( i, r ) ] = False
             yield new_state
 
@@ -101,8 +95,7 @@ def d_decalibration( act_tuple, state, rigid ):
     calibrated_pairs = [ *filter( lambda x: calibrated[ x ], calibrated.keys() ) ]
     for calibrated_pair in calibrated_pairs:
         # calibrated_pair = random.choice( calibrated_pairs )
-        new_state = state.shallow_copy()
-        new_state.calibrated = deepcopy( new_state.calibrated )
+        new_state = state.copy()
         new_state.calibrated[ calibrated_pair ] = False
         yield new_state
 
@@ -136,8 +129,7 @@ def d_cannot_see_to_calibrate( act_tuple, state, rigid ):
                 r_i_m = product( rovers, { o }, modes )
                 have_image_check = map( lambda x: ( x[ 1 ], x[ 2 ] ) in have_image[ x[ 0 ] ], r_i_m )
                 if not any( have_image_check ):
-                    new_state = state.shallow_copy()
-                    new_state.visible_from = deepcopy( new_state.visible_from )
+                    new_state = state.copy()
                     new_state.visible_from[ o ].remove( w )
                     yield new_state
 
@@ -167,8 +159,7 @@ def d_cannot_see_to_take_image( act_tuple, state, rigid ):
             w in visible_from_o and image not in have_image[ r ]:
             # avoid making objective unreachable
             if len( visible_from_o ) > 1:
-                new_state = state.shallow_copy()
-                new_state.visible_from = deepcopy( new_state.visible_from )
+                new_state = state.copy()
                 new_state.visible_from[ o ].remove( w )
                 yield new_state
 
