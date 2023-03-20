@@ -116,18 +116,20 @@ def main():
     old_mean_cpu_time = np.mean( old_cpu_time, axis=0 )
     old_mean_action_count = np.mean( old_action_count, axis=0 )
 
-    # print( np.mean( (new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time ) )
-    # print( np.mean( (new_mean_iteration_count- old_mean_iteration_count ) / old_mean_iteration_count ) )
-    x = stats.ttest_ind( new_iteration_count, old_iteration_count, equal_var=False )
-    print( np.max( x.statistic ) )
-    print( np.mean( x.statistic ) )
-    print( np.max( x.pvalue ) )
-    print( np.mean( x.pvalue ) )
-    x = stats.ttest_ind( new_cpu_time, old_cpu_time, equal_var=False )
-    print( np.max( x.statistic ) )
-    print( np.mean( x.statistic ) )
-    print( np.max( x.pvalue ) )
-    print( np.mean( x.pvalue ) )
+    print( np.mean( (new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time ) )
+    print( np.std( (new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time ) )
+    print( np.mean( (new_mean_iteration_count- old_mean_iteration_count ) / old_mean_iteration_count ) )
+    print( np.std( (new_mean_iteration_count- old_mean_iteration_count ) / old_mean_iteration_count ) )
+    # x = stats.ttest_ind( new_iteration_count, old_iteration_count, equal_var=False )
+    # print( np.max( x.statistic ) )
+    # print( np.mean( x.statistic ) )
+    # print( np.max( x.pvalue ) )
+    # print( np.mean( x.pvalue ) )
+    # x = stats.ttest_ind( new_cpu_time, old_cpu_time, equal_var=False )
+    # print( np.max( x.statistic ) )
+    # print( np.mean( x.statistic ) )
+    # print( np.max( x.pvalue ) )
+    # print( np.mean( x.pvalue ) )
 
     # standard error
     new_err_iteration_count = np.std( new_iteration_count, axis=0 ) / np.sqrt( N )
@@ -138,89 +140,85 @@ def main():
     old_err_action_count = np.std( old_action_count, axis=0 ) / np.sqrt( N )
 
     x = np.asarray( [ i + 1 for i in range( M ) ] )
+    x_range = x[0:M+2:2]
 
-    # print( new_iteration_count )
-    bar_width = 0.2
+    bar_width = 0.3
+    position_offset = 1.2
     c_0 = "red"
     c_1 = "cyan"
     c_2 = "black"
-    # plt.figure(0)
-    # ax = plt.subplot( 3, 1, 1 )
-    # title = "Rovers Domain"
-    # plt.title( title )
-    # # plt.bar( x, new_mean_iteration_count, yerr=new_err_iteration_count, width=bar_width, label="new" )
-    # # plt.bar( x + bar_width, old_mean_iteration_count, yerr=old_err_iteration_count, width=bar_width, label="old"  )
-    # bp_0 = ax.boxplot( new_iteration_count, positions=x - 1.1 * bar_width / 2, widths=bar_width,
-    #                     notch=True, labels=x, patch_artist=True,
-    #                     boxprops=dict( facecolor=c_0, color=c_0 ),
-    #                     capprops=dict( color=c_0 ),
-    #                     whiskerprops=dict( color=c_0 ),
-    #                     flierprops=dict( color=c_0, markeredgecolor=c_0 ),
-    #                     medianprops=dict( color=c_2 ),
-    #              )
-    # bp_1 = ax.boxplot( old_iteration_count, positions=x + 1.1 * bar_width / 2, widths=bar_width,
-    #                     notch=True, labels=x, patch_artist=True,
-    #                     boxprops=dict( facecolor=c_1, color=c_1 ),
-    #                     capprops=dict( color=c_1 ),
-    #                     whiskerprops=dict( color=c_1 ),
-    #                     flierprops=dict( color=c_1, markeredgecolor=c_1 ),
-    #                     medianprops=dict( color=c_2 ),
-    #              )
-    # # plt.xlabel( "Problem #" )
-    # plt.ylabel( "Iteration Count")
-    # # plt.yscale( "log" )
-    # ax.set_xticks( x )
-    # ax.legend( [ bp_0[ "boxes" ][ 0 ], bp_1[ "boxes" ][ 0 ] ], [ "new", "old" ] )
-    #
-    # ax = plt.subplot( 3, 1, 2 )
-    # # plt.bar( x, new_mean_cpu_time, yerr=new_err_cpu_time, width=bar_width, label="new" )
-    # # plt.bar( x + bar_width, old_mean_cpu_time, yerr=old_err_cpu_time, width=bar_width, label="old" )
-    # bp_0 = ax.boxplot( new_cpu_time, positions=x - 1.1 * bar_width / 2, widths=bar_width,
-    #                    notch=True, labels=x, patch_artist=True,
-    #                    boxprops=dict( facecolor=c_0, color=c_0 ),
-    #                    capprops=dict( color=c_0 ),
-    #                    whiskerprops=dict( color=c_0 ),
-    #                    flierprops=dict( color=c_0, markeredgecolor=c_0 ),
-    #                    medianprops=dict( color=c_2 ),
-    #                    )
-    # bp_1 = ax.boxplot( old_cpu_time, positions=x + 1.1 * bar_width / 2, widths=bar_width,
-    #                    notch=True, labels=x, patch_artist=True,
-    #                    boxprops=dict( facecolor=c_1, color=c_1 ),
-    #                    capprops=dict( color=c_1 ),
-    #                    whiskerprops=dict( color=c_1 ),
-    #                    flierprops=dict( color=c_1, markeredgecolor=c_1 ),
-    #                    medianprops=dict( color=c_2 ),
-    #                    )
-    # # plt.xlabel( "Problem #" )
-    # plt.ylabel( "CPU Time (s)" )
-    # # plt.yscale( "log" )
-    # ax.set_xticks( x )
-    #
-    # ax = plt.subplot( 3, 1, 3 )
-    # # plt.bar( x, new_mean_action_count, yerr=new_err_action_count, width=bar_width, label="new" )
-    # # plt.bar( x + bar_width, old_mean_action_count, yerr=old_err_action_count, width=bar_width, label="old" )
-    # bp_0 = ax.boxplot( new_action_count, positions=x - 1.1 * bar_width / 2, widths=bar_width,
-    #                    notch=True, labels=x, patch_artist=True,
-    #                    boxprops=dict( facecolor=c_0, color=c_0 ),
-    #                    capprops=dict( color=c_0 ),
-    #                    whiskerprops=dict( color=c_0 ),
-    #                    flierprops=dict( color=c_0, markeredgecolor=c_0 ),
-    #                    medianprops=dict( color=c_2 ),
-    #                    )
-    # bp_1 = ax.boxplot( old_action_count, positions=x + 1.1 * bar_width / 2, widths=bar_width,
-    #                    notch=True, labels=x, patch_artist=True,
-    #                    boxprops=dict( facecolor=c_1, color=c_1 ),
-    #                    capprops=dict( color=c_1 ),
-    #                    whiskerprops=dict( color=c_1 ),
-    #                    flierprops=dict( color=c_1, markeredgecolor=c_1 ),
-    #                    medianprops=dict( color=c_2 ),
-    #                    )
-    # plt.xlabel( "Problem #" )
-    # plt.ylabel( "Action Count" )
-    # ax.set_xticks( x )
-    # plt.legend()
-    # # plt.savefig( title + ".png")
-    # plt.show()
+    plt.figure( 0 )
+    plt.rcParams.update( { 'font.size': 12 } )
+
+
+    ax = plt.subplot( 3, 1, 2 )
+    bp_0 = ax.boxplot( new_cpu_time, positions=x - position_offset * bar_width / 2, widths=bar_width,
+                       notch=True, labels=2 * x - 1, patch_artist=True,
+                       boxprops=dict( facecolor=c_0, color=c_0 ),
+                       capprops=dict( color=c_0 ),
+                       whiskerprops=dict( color=c_0 ),
+                       flierprops=dict( color=c_0, markeredgecolor=c_0, marker="." ),
+                       medianprops=dict( color=c_2 ),
+                       )
+    bp_1 = ax.boxplot( old_cpu_time, positions=x + position_offset * bar_width / 2, widths=bar_width,
+                       notch=True, labels=2 * x - 1, patch_artist=True,
+                       boxprops=dict( facecolor=c_1, color=c_1 ),
+                       capprops=dict( color=c_1 ),
+                       whiskerprops=dict( color=c_1 ),
+                       flierprops=dict( color=c_1, markeredgecolor=c_1, marker="." ),
+                       medianprops=dict( color=c_2 ),
+                       )
+    plt.ylabel( "CPU Time (s)" )
+    # plt.yscale( "log" )
+    ax.set_xticks( x_range )
+
+    ax = plt.subplot( 3, 1, 3 )
+    bp_0 = ax.boxplot( new_action_count, positions=x - position_offset * bar_width / 2, widths=bar_width,
+                       notch=True, labels=2 * x - 1, patch_artist=True,
+                       boxprops=dict( facecolor=c_0, color=c_0 ),
+                       capprops=dict( color=c_0 ),
+                       whiskerprops=dict( color=c_0 ),
+                       flierprops=dict( color=c_0, markeredgecolor=c_0, marker="." ),
+                       medianprops=dict( color=c_2 ),
+                       )
+    bp_1 = ax.boxplot( old_action_count, positions=x + position_offset * bar_width / 2, widths=bar_width,
+                       notch=True, labels=2 * x - 1, patch_artist=True,
+                       boxprops=dict( facecolor=c_1, color=c_1 ),
+                       capprops=dict( color=c_1 ),
+                       whiskerprops=dict( color=c_1 ),
+                       flierprops=dict( color=c_1, markeredgecolor=c_1, marker="." ),
+                       medianprops=dict( color=c_2 ),
+                       )
+    plt.xlabel( "Problem #" )
+    plt.ylabel( "Action Count" )
+    ax.set_xticks( x_range )
+
+    ax = plt.subplot( 3, 1, 1 )
+    bp_0 = ax.boxplot( new_iteration_count, positions=x - position_offset * bar_width / 2, widths=bar_width,
+                       notch=True, labels=2 * x - 1, patch_artist=True,
+                       boxprops=dict( facecolor=c_0, color=c_0 ),
+                       capprops=dict( color=c_0 ),
+                       whiskerprops=dict( color=c_0 ),
+                       flierprops=dict( color=c_0, markeredgecolor=c_0, marker="." ),
+                       medianprops=dict( color=c_2 ),
+                       )
+    bp_1 = ax.boxplot( old_iteration_count, positions=x + position_offset * bar_width / 2, widths=bar_width,
+                       notch=True, labels=2 * x - 1, patch_artist=True,
+                       boxprops=dict( facecolor=c_1, color=c_1 ),
+                       capprops=dict( color=c_1 ),
+                       whiskerprops=dict( color=c_1 ),
+                       flierprops=dict( color=c_1, markeredgecolor=c_1, marker="." ),
+                       medianprops=dict( color=c_2 ),
+                       )
+    plt.ylabel( "Iteration Count" )
+    # plt.yscale( "log" )
+    ax.set_xticks( x_range )
+    ax.set_yticks( range(0,100000,20000) )
+    ax.legend( [ bp_0[ "boxes" ][ 0 ], bp_1[ "boxes" ][ 0 ] ], [ "new", "old" ] )
+    title = "Rovers Domain"
+    plt.title( title )
+    plt.savefig( title + ".png", bbox_inches='tight' )
+    plt.show()
 
     # plt.figure( 1 )
     # plt.bar( x, (new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time,
@@ -228,13 +226,42 @@ def main():
     #                        np.power( old_err_cpu_time / old_mean_cpu_time, 2 ) ) )
     # plt.show()
 
-    plt.figure(2)
-    plt.scatter(x,old_mean_cpu_time)
-    plt.scatter( x, new_mean_cpu_time )
-    plt.xticks(x)
-    plt.xlabel("Problem Number")
-    plt.ylabel("")
-    plt.show()
+    # plt.figure(2)
+    # ax = plt.subplot( 3, 1, 1 )
+    # title = "Rovers Domain"
+    # plt.title( title )
+    # plt.bar( x, new_mean_iteration_count, yerr=new_err_iteration_count, width=bar_width, label="new", color=c_0 )
+    # plt.bar( x + bar_width, old_mean_iteration_count, yerr=old_err_iteration_count, width=bar_width, label="old",
+    #          color=c_1 )
+    # # plt.xlabel( "Problem #" )
+    # plt.ylabel( "Iteration Count" )
+    # # plt.yscale( "log" )
+    # ax.set_xticks( x )
+    #
+    # ax = plt.subplot( 3, 1, 2 )
+    # plt.bar( x, new_mean_cpu_time, yerr=new_err_cpu_time, width=bar_width, label="new", color=c_0 )
+    # plt.bar( x + bar_width, old_mean_cpu_time, yerr=old_err_cpu_time, width=bar_width, label="old", color=c_1 )
+    # # plt.xlabel( "Problem #" )
+    # plt.ylabel( "CPU Time (s)" )
+    # # plt.yscale( "log" )
+    # ax.set_xticks( x )
+    #
+    # ax = plt.subplot( 3, 1, 3 )
+    # plt.bar( x, new_mean_action_count, yerr=new_err_action_count, width=bar_width, label="new", color=c_0 )
+    # plt.bar( x + bar_width, old_mean_action_count, yerr=old_err_action_count, width=bar_width, label="old", color=c_1 )
+    # plt.xlabel( "Problem #" )
+    # plt.ylabel( "Action Count" )
+    # ax.set_xticks( x )
+    # plt.legend()
+    # # plt.savefig( title + ".png")
+    # plt.show()
+    #
+    # plt.figure( 3 )
+    # plt.plot( x, ((new_mean_cpu_time - old_mean_cpu_time) / old_mean_cpu_time) )
+    # plt.plot( x, ((new_mean_iteration_count - old_mean_iteration_count) / old_mean_iteration_count) )
+    # plt.plot( x, ((new_mean_action_count - old_mean_action_count) / old_mean_action_count) )
+    # plt.legend(["CPU Time","Iteration Count", "Action Count"])
+    # plt.show()
 
 if __name__ == '__main__':
     try:

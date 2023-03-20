@@ -47,6 +47,7 @@ def run_experiment( i, j, k ):
         return ( ( i, j, k ) , ( -1, -1, -1, -1, -1 ) )
 
 if __name__ == '__main__':
+    plt.rcParams.update( { 'font.size': 15 } )
     # N = 10000
     # P = 2
     # M = 100
@@ -129,6 +130,7 @@ if __name__ == '__main__':
             old_robosub_cpu_time, axis=1 ) ) )
 
     plt.scatter( np.mean( old_robosub_action_cost, axis=1 ), np.mean( new_robosub_action_cost, axis=1 ) )
+
     x = np.asarray( [ min( np.min( np.mean( old_robosub_action_cost, axis=1 ) ),
                            np.min( np.mean( new_robosub_action_cost, axis=1 ) ) ),
                       max( np.max( np.mean( old_robosub_action_cost, axis=1 ) ),
@@ -138,44 +140,45 @@ if __name__ == '__main__':
     plt.xlabel( "Mean Old Action Cost" )
     plt.ylabel( "Mean New Action Cost" )
     plt.title( "Robosub Domain" )
+    plt.savefig( "robosub_action_cost.png", bbox_inches='tight' )
     plt.show()
     
-    plt.scatter( np.mean( old_robosub_action_count, axis=1 ), np.mean( new_robosub_action_count, axis=1 ) )
-    x = np.asarray( [ min( np.min( np.mean( old_robosub_action_count, axis=1 ) ),
-                           np.min( np.mean( new_robosub_action_count, axis=1 ) ) ),
-                      max( np.max( np.mean( old_robosub_action_count, axis=1 ) ),
-                           np.max( np.mean( new_robosub_action_count, axis=1 ) ) ) ] )
-    plt.plot( x, x, color="black", linestyle="dashed" )
-    plt.gca().set_aspect( 'equal', adjustable='box' )
-    plt.xlabel( "Mean Old Action Count" )
-    plt.ylabel( "Mean New Action Count" )
-    plt.title( "Robosub Domain" )
-    plt.show()
-
-    plt.scatter( np.mean( old_robosub_cpu_time, axis=1 ), np.mean( new_robosub_cpu_time, axis=1 ) )
-    x = np.asarray( [ min( np.min( np.mean( old_robosub_cpu_time, axis=1 ) ),
-                           np.min( np.mean( new_robosub_cpu_time, axis=1 ) ) ),
-                      max( np.max( np.mean( old_robosub_cpu_time, axis=1 ) ),
-                           np.max( np.mean( new_robosub_cpu_time, axis=1 ) ) ) ] )
-    plt.plot( x, x, color="black", linestyle="dashed" )
-    plt.gca().set_aspect( 'equal', adjustable='box' )
-    plt.xlabel( "Mean Old CPU Time (s)" )
-    plt.ylabel( "Mean New CPU Time (s)" )
-    plt.title( "Robosub Domain" )
-    plt.show()
-
-
-    plt.scatter( np.mean( old_robosub_iteration_count, axis=1 ), np.mean( new_robosub_iteration_count, axis=1 ) )
-    x = np.asarray( [ min( np.min( np.mean( old_robosub_iteration_count, axis=1 ) ),
-                           np.min( np.mean( new_robosub_iteration_count, axis=1 ) ) ),
-                      max( np.max( np.mean( old_robosub_iteration_count, axis=1 ) ),
-                           np.max( np.mean( new_robosub_iteration_count, axis=1 ) ) ) ] )
-    plt.plot( x, x, color="black", linestyle="dashed" )
-    plt.gca().set_aspect( 'equal', adjustable='box' )
-    plt.xlabel( "Mean Old Iteration Count" )
-    plt.ylabel( "Mean New Iteration Count" )
-    plt.title( "Robosub Domain")
-    plt.show()
+    # plt.scatter( np.mean( old_robosub_action_count, axis=1 ), np.mean( new_robosub_action_count, axis=1 ) )
+    # x = np.asarray( [ min( np.min( np.mean( old_robosub_action_count, axis=1 ) ),
+    #                        np.min( np.mean( new_robosub_action_count, axis=1 ) ) ),
+    #                   max( np.max( np.mean( old_robosub_action_count, axis=1 ) ),
+    #                        np.max( np.mean( new_robosub_action_count, axis=1 ) ) ) ] )
+    # plt.plot( x, x, color="black", linestyle="dashed" )
+    # plt.gca().set_aspect( 'equal', adjustable='box' )
+    # plt.xlabel( "Mean Old Action Count" )
+    # plt.ylabel( "Mean New Action Count" )
+    # plt.title( "Robosub Domain" )
+    # plt.show()
+    #
+    # plt.scatter( np.mean( old_robosub_cpu_time, axis=1 ), np.mean( new_robosub_cpu_time, axis=1 ) )
+    # x = np.asarray( [ min( np.min( np.mean( old_robosub_cpu_time, axis=1 ) ),
+    #                        np.min( np.mean( new_robosub_cpu_time, axis=1 ) ) ),
+    #                   max( np.max( np.mean( old_robosub_cpu_time, axis=1 ) ),
+    #                        np.max( np.mean( new_robosub_cpu_time, axis=1 ) ) ) ] )
+    # plt.plot( x, x, color="black", linestyle="dashed" )
+    # plt.gca().set_aspect( 'equal', adjustable='box' )
+    # plt.xlabel( "Mean Old CPU Time (s)" )
+    # plt.ylabel( "Mean New CPU Time (s)" )
+    # plt.title( "Robosub Domain" )
+    # plt.show()
+    #
+    #
+    # plt.scatter( np.mean( old_robosub_iteration_count, axis=1 ), np.mean( new_robosub_iteration_count, axis=1 ) )
+    # x = np.asarray( [ min( np.min( np.mean( old_robosub_iteration_count, axis=1 ) ),
+    #                        np.min( np.mean( new_robosub_iteration_count, axis=1 ) ) ),
+    #                   max( np.max( np.mean( old_robosub_iteration_count, axis=1 ) ),
+    #                        np.max( np.mean( new_robosub_iteration_count, axis=1 ) ) ) ] )
+    # plt.plot( x, x, color="black", linestyle="dashed" )
+    # plt.gca().set_aspect( 'equal', adjustable='box' )
+    # plt.xlabel( "Mean Old Iteration Count" )
+    # plt.ylabel( "Mean New Iteration Count" )
+    # plt.title( "Robosub Domain")
+    # plt.show()
 
     plt.scatter( np.mean( old_robosub_node_expansions, axis=1 ), np.mean( new_robosub_node_expansions, axis=1 ) )
     x = np.asarray( [ min( np.min( np.mean( old_robosub_node_expansions, axis=1 ) ),
@@ -187,6 +190,7 @@ if __name__ == '__main__':
     plt.xlabel( "Mean Old Node Expansions" )
     plt.ylabel( "Mean New Node Expansions" )
     plt.title( "Robosub Domain" )
+    plt.savefig( "robosub_node_expansions.png", bbox_inches='tight' )
     plt.show()
 
 

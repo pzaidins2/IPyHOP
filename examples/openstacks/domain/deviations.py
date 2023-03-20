@@ -25,41 +25,43 @@ class shopfixer_deviation_handler():
         self.rigid = rigid
         self.planner = planner
         self.determine_deviation_time = 0
-        self.has_chosen = False
+        self.deviation_max = 0
+        self.base_probability = 0.1
 
-    def determine_deviation( self, plan_index, plan, state ):
+    def determine_deviation( self, act_tuple, state ):
         start = time.process_time_ns()
         # find all valid deviations in original plan
         # print( act_insts )
-        act_deviation_pairs = []
-        # trqaverse plan getting all valid deviation at each stage
-        for i, act_inst in enumerate( plan[ plan_index: ] ):
-            for d_operator in self.deviation_operators:
-                for deviation_state in d_operator( act_inst, state ):
-                    act_deviation_pairs.append( ( i + plan_index, deviation_state ) )
-                    # allow for no failure
-                    act_deviation_pairs.append( (None, None) )
-            act_name = act_inst[ 0 ]
-            act_arg = act_inst[ 1: ]
-            state = self.actions.action_dict[ act_name ]( state.copy(), *act_arg )
-            # this can happen if a previous deviation will cause a future failure
-            if state == None:
-                break
-        act_deviation_pairs.append( (None, None) )
-        chosen_pair = random.choice( act_deviation_pairs )
-        self.chosen_pair = chosen_pair
-        self.has_chosen = True
+        deviation_states = []
+        # getting all valid deviation for current state and ation
+        for d_operator in self.deviation_operators:
+            for d_state in d_operator( act_tuple, state ):
+                if d_state != None:
+                    deviation_states.append(d_state)
+        self.deviation_state_count = len( deviation_states )
+        if self.deviation_state_count > 0:
+            chosen_deviation = random.choice( deviation_states )
+        else:
+            chosen_deviation = None
+        self.chosen_deviation = chosen_deviation
+        self.deviation_max = max(self.deviation_state_count, self.deviation_max)
         self.determine_deviation_time += time.process_time_ns() - start
 
     def __call__( self, plan_index, plan, state ):
         # print( (act_tuple, self.chosen_pair[ 0 ]) )
-        if not( self.has_chosen ):
-            self.determine_deviation( plan_index, plan, state )
-        if plan_index == self.chosen_pair[ 0 ]:
-            self.has_chosen = False
-            return self.chosen_pair[ 1 ]
-        else:
+        self.determine_deviation( plan[plan_index], state )
+        # regularize deviation possibility
+        # we want states with many deviations to be more likely to produce a mutation
+        if self.chosen_deviation == None:
             return state
+        else:
+            # trigger deviation with probability modified by possible deviation
+            # we want all deviations over the course of the plan to trigeer with equal likelihood
+            have_deviation = random.uniform(0,1)
+            if have_deviation < self.base_probability * self.deviation_state_count / self.deviation_max:
+                return self.chosen_deviation
+            else:
+                return state
 
 
 # openstacks deviation handler
