@@ -13,11 +13,12 @@ import numpy as np
 # ******************************************    Class Declaration Start     ****************************************** #
 class MonteCarloExecutor(object):
     def __init__(self, actions: Actions, deviation_handler: Optional[Callable[
-        [Tuple[Tuple[str],State]], State]]=None, seed: int = 10):
+        [Tuple[Tuple[str],State]], State]]=None, seed=None):
         self.actions = actions
         self.deviation_handler = deviation_handler
         self.exec_list = None
-        np.random.seed(seed)
+        if seed != None:
+            np.random.seed(seed)
 
     # ******************************        Class Method Declaration        ****************************************** #
     def execute( self, state: State, plan: List[str], actions: Union[Actions, None] = None,  ) -> List[Tuple]:

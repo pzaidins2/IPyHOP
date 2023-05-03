@@ -14,6 +14,7 @@ from ipyhop.mc_executor import MonteCarloExecutor
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+from multiprocessing import Pool, cpu_count
 
 
 def run_experiment( i, j, k ):
@@ -48,56 +49,56 @@ def run_experiment( i, j, k ):
 
 if __name__ == '__main__':
     plt.rcParams.update( { 'font.size': 15 } )
-    # N = 10000
-    # P = 2
-    # M = 100
-    # metrics = np.ndarray( (P, N, M, 5) )
-    #
-    # print( metrics.shape )
-    # args = [ ]
-    # for i in range( P ):
-    #     for j in range( N ):
-    #         for k in range( M ):
-    #             args.append( (i, j, k) )
-    #
-    # # with cProfile.Profile() as pr:
-    # # for exp_set in args:
-    # #     run_experiment( *exp_set )
-    #
-    # # pr.print_stats()
-    #
-    # with Pool( processes=cpu_count() ) as pool:
-    #     output = pool.starmap_async( run_experiment, args, chunksize=1 )
-    #     while True:
-    #         if output.ready():
-    #             break
-    #         print( str( round( 100 - 100 * output._number_left / len( args ), 3 ) ) + " %" )
-    #         time.sleep( 60 )
-    # for exp in output.get():
-    #     metrics[ exp[ 0 ] ] = np.asarray( exp[ 1 ] )
-    #
-    # new_robosub_action_cost = metrics[ 0, :, :, 0 ]
-    # new_robosub_action_count = metrics[ 0, :, :, 1 ]
-    # new_robosub_cpu_time = metrics[ 0, :, :, 2 ]
-    # new_robosub_iteration_count = metrics[ 0, :, :, 3 ]
-    # new_robosub_node_expansions = metrics[ 0, :, :, 4 ]
-    # old_robosub_action_cost = metrics[ 1, :, :, 0 ]
-    # old_robosub_action_count = metrics[ 1, :, :, 1 ]
-    # old_robosub_cpu_time = metrics[ 1, :, :, 2 ]
-    # old_robosub_iteration_count = metrics[ 1, :, :, 3 ]
-    # old_robosub_node_expansions = metrics[ 1, :, :, 4 ]
-    #
-    # # save to csv
-    # np.savetxt( "new_robosub_action_cost.csv", new_robosub_action_cost, delimiter="," )
-    # np.savetxt( "new_robosub_action_count.csv", new_robosub_action_count, delimiter="," )
-    # np.savetxt( "new_robosub_cpu_time.csv", new_robosub_cpu_time, delimiter="," )
-    # np.savetxt( "new_robosub_iteration_count.csv", new_robosub_iteration_count, delimiter="," )
-    # np.savetxt( "new_robosub_node_expansions.csv", new_robosub_node_expansions, delimiter="," )
-    # np.savetxt( "old_robosub_action_cost.csv", old_robosub_action_cost, delimiter="," )
-    # np.savetxt( "old_robosub_action_count.csv", old_robosub_action_count, delimiter="," )
-    # np.savetxt( "old_robosub_cpu_time.csv", old_robosub_cpu_time, delimiter="," )
-    # np.savetxt( "old_robosub_iteration_count.csv", old_robosub_iteration_count, delimiter="," )
-    # np.savetxt( "old_robosub_node_expansions.csv", old_robosub_node_expansions, delimiter="," )
+    N = 10000
+    P = 2
+    M = 100
+    metrics = np.ndarray( (P, N, M, 5) )
+
+    print( metrics.shape )
+    args = [ ]
+    for i in range( P ):
+        for j in range( N ):
+            for k in range( M ):
+                args.append( (i, j, k) )
+
+    # with cProfile.Profile() as pr:
+    # for exp_set in args:
+    #     run_experiment( *exp_set )
+
+    # pr.print_stats()
+
+    with Pool( processes=cpu_count() ) as pool:
+        output = pool.starmap_async( run_experiment, args, chunksize=1 )
+        while True:
+            if output.ready():
+                break
+            print( str( round( 100 - 100 * output._number_left / len( args ), 3 ) ) + " %" )
+            time.sleep( 60 )
+    for exp in output.get():
+        metrics[ exp[ 0 ] ] = np.asarray( exp[ 1 ] )
+
+    new_robosub_action_cost = metrics[ 0, :, :, 0 ]
+    new_robosub_action_count = metrics[ 0, :, :, 1 ]
+    new_robosub_cpu_time = metrics[ 0, :, :, 2 ]
+    new_robosub_iteration_count = metrics[ 0, :, :, 3 ]
+    new_robosub_node_expansions = metrics[ 0, :, :, 4 ]
+    old_robosub_action_cost = metrics[ 1, :, :, 0 ]
+    old_robosub_action_count = metrics[ 1, :, :, 1 ]
+    old_robosub_cpu_time = metrics[ 1, :, :, 2 ]
+    old_robosub_iteration_count = metrics[ 1, :, :, 3 ]
+    old_robosub_node_expansions = metrics[ 1, :, :, 4 ]
+
+    # save to csv
+    np.savetxt( "new_robosub_action_cost.csv", new_robosub_action_cost, delimiter="," )
+    np.savetxt( "new_robosub_action_count.csv", new_robosub_action_count, delimiter="," )
+    np.savetxt( "new_robosub_cpu_time.csv", new_robosub_cpu_time, delimiter="," )
+    np.savetxt( "new_robosub_iteration_count.csv", new_robosub_iteration_count, delimiter="," )
+    np.savetxt( "new_robosub_node_expansions.csv", new_robosub_node_expansions, delimiter="," )
+    np.savetxt( "old_robosub_action_cost.csv", old_robosub_action_cost, delimiter="," )
+    np.savetxt( "old_robosub_action_count.csv", old_robosub_action_count, delimiter="," )
+    np.savetxt( "old_robosub_cpu_time.csv", old_robosub_cpu_time, delimiter="," )
+    np.savetxt( "old_robosub_iteration_count.csv", old_robosub_iteration_count, delimiter="," )
+    np.savetxt( "old_robosub_node_expansions.csv", old_robosub_node_expansions, delimiter="," )
 
     # load csv
     new_robosub_action_cost = np.genfromtxt( "data/new_robosub_action_cost.csv", delimiter="," )
