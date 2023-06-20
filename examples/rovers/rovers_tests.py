@@ -214,10 +214,10 @@ def main():
     # plt.yscale( "log" )
     ax.set_xticks( x_range )
     ax.set_yticks( range(0,100000,20000) )
-    ax.legend( [ bp_0[ "boxes" ][ 0 ], bp_1[ "boxes" ][ 0 ] ], [ "new", "old" ] )
+    ax.legend( [ bp_0[ "boxes" ][ 0 ], bp_1[ "boxes" ][ 0 ] ], [ "IPyHOPPER", "Lazy-Refineahead" ] )
     title = "Rovers Domain"
     plt.title( title )
-    plt.savefig( title + ".png", bbox_inches='tight' )
+    plt.savefig( title + ".png", bbox_inches='tight', dpi=1000 )
     plt.show()
 
     # plt.figure( 1 )

@@ -50,53 +50,53 @@ def run_experiment( i, j, k, problem_file_path ):
         print( "\nEXCEPTION OCCURRED: " + str( ( i, j, k ) ) + "\n" )
         return ( ( i, j, k ), ( -1, -1, -1 ) )
 def main():
-    problem_file_names = filter( lambda x: "pddl" in x, os.listdir( "problems" ) )
-    problem_paths = [ "problems/" + x for x in problem_file_names ]
-    N = 1000
-    M = len( problem_paths )
-    P = 2
-    metrics = np.ndarray( ( P, N, M, 3 ) )
-
-    print( metrics.shape )
-    args = []
-    for i in range( P ):
-        for j in range( N ):
-            for k in range( M ):
-                args.append( ( i, j, k, problem_paths[ k ] ) )
-    # i = 0
-    # for j in range( N ):
-    #     for k in range( M ):
-    #         args.append( (i, j, k, problem_paths[ k ]) )
-    # with cProfile.Profile() as pr:
-    #     for exp_set in args:
-    #         run_experiment( *exp_set )
+    # problem_file_names = filter( lambda x: "pddl" in x, os.listdir( "problems" ) )
+    # problem_paths = [ "problems/" + x for x in problem_file_names ]
+    # N = 1000
+    # M = len( problem_paths )
+    # P = 2
+    # metrics = np.ndarray( ( P, N, M, 3 ) )
     #
-    # pr.print_stats()
-
-    with Pool( processes=cpu_count() ) as pool:
-        output = pool.starmap_async( run_experiment, args, chunksize=1 )
-        while True:
-            if output.ready():
-                break
-            print( str( round( 100 - 100 * output._number_left / len( args ), 3 ) ) + " %" )
-            time.sleep( 60 )
-    for exp in output.get():
-        metrics[ exp[ 0 ] ] = np.asarray( exp[1] )
-
-    new_iteration_count = metrics[ 0, :, :, 0 ]
-    new_cpu_time = metrics[ 0, :, :, 1 ]
-    new_action_count = metrics[ 0, :, :, 2 ]
-    old_iteration_count = metrics[ 1, :, :, 0 ]
-    old_cpu_time = metrics[ 1, :, :, 1 ]
-    old_action_count = metrics[ 1, :, :, 2 ]
-
-    # save to csv
-    np.savetxt( "new_openstacks_iteration_count.csv", new_iteration_count, delimiter="," )
-    np.savetxt( "new_openstacks_cpu_time.csv", new_cpu_time, delimiter="," )
-    np.savetxt( "new_openstacks_action_count.csv", new_action_count, delimiter="," )
-    np.savetxt( "old_openstacks_iteration_count.csv", old_iteration_count, delimiter="," )
-    np.savetxt( "old_openstacks_cpu_time.csv", old_cpu_time, delimiter="," )
-    np.savetxt( "old_openstacks_action_count.csv", old_action_count, delimiter="," )
+    # print( metrics.shape )
+    # args = []
+    # for i in range( P ):
+    #     for j in range( N ):
+    #         for k in range( M ):
+    #             args.append( ( i, j, k, problem_paths[ k ] ) )
+    # # i = 0
+    # # for j in range( N ):
+    # #     for k in range( M ):
+    # #         args.append( (i, j, k, problem_paths[ k ]) )
+    # # with cProfile.Profile() as pr:
+    # #     for exp_set in args:
+    # #         run_experiment( *exp_set )
+    # #
+    # # pr.print_stats()
+    #
+    # with Pool( processes=cpu_count() ) as pool:
+    #     output = pool.starmap_async( run_experiment, args, chunksize=1 )
+    #     while True:
+    #         if output.ready():
+    #             break
+    #         print( str( round( 100 - 100 * output._number_left / len( args ), 3 ) ) + " %" )
+    #         time.sleep( 60 )
+    # for exp in output.get():
+    #     metrics[ exp[ 0 ] ] = np.asarray( exp[1] )
+    #
+    # new_iteration_count = metrics[ 0, :, :, 0 ]
+    # new_cpu_time = metrics[ 0, :, :, 1 ]
+    # new_action_count = metrics[ 0, :, :, 2 ]
+    # old_iteration_count = metrics[ 1, :, :, 0 ]
+    # old_cpu_time = metrics[ 1, :, :, 1 ]
+    # old_action_count = metrics[ 1, :, :, 2 ]
+    #
+    # # save to csv
+    # np.savetxt( "new_openstacks_iteration_count.csv", new_iteration_count, delimiter="," )
+    # np.savetxt( "new_openstacks_cpu_time.csv", new_cpu_time, delimiter="," )
+    # np.savetxt( "new_openstacks_action_count.csv", new_action_count, delimiter="," )
+    # np.savetxt( "old_openstacks_iteration_count.csv", old_iteration_count, delimiter="," )
+    # np.savetxt( "old_openstacks_cpu_time.csv", old_cpu_time, delimiter="," )
+    # np.savetxt( "old_openstacks_action_count.csv", old_action_count, delimiter="," )
 
     # load csv
     new_iteration_count = np.genfromtxt( "new_openstacks_iteration_count.csv", delimiter="," )
@@ -213,10 +213,10 @@ def main():
     plt.ylabel( "Iteration Count" )
     # plt.yscale( "log" )
     ax.set_xticks( x_range )
-    ax.legend( [ bp_0[ "boxes" ][ 0 ], bp_1[ "boxes" ][ 0 ] ], [ "new", "old" ] )
+    ax.legend( [ bp_0[ "boxes" ][ 0 ], bp_1[ "boxes" ][ 0 ] ], [ "IPyHOPPER", "Lazy-Refineahead" ] )
     title = "Openstacks Domain"
     plt.title( title )
-    plt.savefig( title + ".png", bbox_inches='tight' )
+    plt.savefig( title + ".png", bbox_inches='tight', dpi=1000 )
     plt.show()
 
 

@@ -167,17 +167,17 @@ if __name__ == '__main__':
     P = 2
     N, M = new_rescue_iteration_count.shape
 
-    plt.scatter( np.mean( old_rescue_action_cost, axis=1 ), np.mean( new_rescue_action_cost, axis=1 ) )
+    plt.scatter( np.mean( old_rescue_action_cost, axis=1 ), np.mean( new_rescue_action_cost, axis=1 ), marker="x" )
     x = np.asarray( [ min( np.min( np.mean( old_rescue_action_cost, axis=1 ) ),
                            np.min( np.mean( new_rescue_action_cost, axis=1 ) ) ),
                       max( np.max( np.mean( old_rescue_action_cost, axis=1 ) ),
                            np.max( np.mean( new_rescue_action_cost, axis=1 ) ) ) ] )
     plt.plot( x, x, color="black", linestyle="dashed" )
     plt.gca().set_aspect( 'equal', adjustable='box' )
-    plt.xlabel( "Mean Old Action Cost" )
-    plt.ylabel( "Mean New Action Cost" )
+    plt.xlabel( "Mean Lazy-Refineahead Action Cost" )
+    plt.ylabel( "Mean IPyHOPPER Action Cost" )
     plt.title( "Rescue Domain" )
-    plt.savefig( "rescue_action_cost.png", bbox_inches='tight' )
+    plt.savefig( "rescue_action_cost.png", bbox_inches='tight', dpi=1000 )
     plt.show()
 
 
@@ -217,17 +217,17 @@ if __name__ == '__main__':
     # plt.title( "Rescue Domain" )
     # plt.show()
 
-    plt.scatter( np.mean( old_rescue_node_expansions, axis=1 ), np.mean( new_rescue_node_expansions, axis=1 ) )
+    plt.scatter( np.mean( old_rescue_node_expansions, axis=1 ), np.mean( new_rescue_node_expansions, axis=1 ), marker="x" )
     x = np.asarray( [ min( np.min( np.mean( old_rescue_node_expansions, axis=1 ) ),
                            np.min( np.mean( new_rescue_node_expansions, axis=1 ) ) ),
                       max( np.max( np.mean( old_rescue_node_expansions, axis=1 ) ),
                            np.max( np.mean( new_rescue_node_expansions, axis=1 ) ) ) ] )
     plt.plot( x, x, color="black", linestyle="dashed" )
     plt.gca().set_aspect( 'equal', adjustable='box' )
-    plt.xlabel( "Mean Old Node Expansions" )
-    plt.ylabel( "Mean New Node Expansions" )
+    plt.xlabel( "Mean Lazy-Refineahead Node Expansions" )
+    plt.ylabel( "Mean IPyHOPPER Node Expansions" )
     plt.title( "Rescue Domain" )
-    plt.savefig( "rescue_node_expansions.png", bbox_inches='tight' )
+    plt.savefig( "rescue_node_expansions.png", bbox_inches='tight', dpi=1000)
     plt.show()
 
 
