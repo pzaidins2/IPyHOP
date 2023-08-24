@@ -2,24 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="eb1938b1-7cf6-4cd2-97e5-171689c5a653" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../examples/openstacks/Openstacks Domain.png" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/openstacks/Openstacks Domain.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/openstacks/new_openstacks_action_count.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/openstacks/data/new_openstacks_action_count.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/openstacks/new_openstacks_cpu_time.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/openstacks/data/new_openstacks_cpu_time.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/openstacks/new_openstacks_iteration_count.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/openstacks/data/new_openstacks_iteration_count.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/openstacks/old_openstacks_action_count.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/openstacks/data/old_openstacks_action_count.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/openstacks/old_openstacks_cpu_time.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/openstacks/data/old_openstacks_cpu_time.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/openstacks/old_openstacks_iteration_count.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/openstacks/data/old_openstacks_iteration_count.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/openstacks/openstacks_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/openstacks/openstacks_test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/robosub/robosub_tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/robosub/robosub_tests.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/satellite/Satellites Domain.png" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/satellite/Satellites Domain.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/satellite/new_satellite_action_count.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/satellite/data/new_satellite_action_count.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/satellite/new_satellite_cpu_time.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/satellite/data/new_satellite_cpu_time.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/satellite/new_satellite_iteration_count.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/satellite/data/new_satellite_iteration_count.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/satellite/old_satellite_action_count.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/satellite/data/old_satellite_action_count.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/satellite/old_satellite_cpu_time.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/satellite/data/old_satellite_cpu_time.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/satellite/old_satellite_iteration_count.csv" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/satellite/data/old_satellite_iteration_count.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../examples/satellite/satellite_tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/../examples/satellite/satellite_tests.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mc_executor.py" beforeDir="false" afterPath="$PROJECT_DIR$/mc_executor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/planner.py" beforeDir="false" afterPath="$PROJECT_DIR$/planner.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

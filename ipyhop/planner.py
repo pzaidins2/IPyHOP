@@ -114,6 +114,7 @@ class IPyHOP(object):
         parent_node_id = sub_graph_root_node_id
         marked_node_id = None
         for _iter in count(0):
+            # root of subtree has been reached, stop
             if parent_node_id in ancestors( self.sol_tree, sub_graph_root_node_id ):
                 break
             curr_node_id = None
@@ -126,6 +127,7 @@ class IPyHOP(object):
                     if self._verbose > 1:
                         print('Iteration {}, Refining node {}.'.format(
                             _iter, repr(self.sol_tree.nodes[node_id]['info'])))
+                        # print( str( [ self.sol_tree.nodes[node_id]['info'] for node_id in dfs_preorder_nodes(self.sol_tree) if self.sol_tree.nodes[node_id]["type"] == "A"] ) )
                     break
             # If Open node wasn't found from the immediate successors
             if curr_node_id is None:
@@ -150,20 +152,7 @@ class IPyHOP(object):
                 curr_node_id, parent_node_id = self._node_refine( curr_node_id, parent_node_id, _iter )
             # if parent_node_id in ancestors( self.sol_tree, sub_graph_root_node_id ):
             #     break
-        # return iteration count and reachable most bottom-left node
-        # print("THIS")
-        # print(curr_node_id)
-        # print(parent_node_id)
-        # print(self.sol_tree.nodes[parent_node_id]["info"])
-        # print( self.sol_tree.nodes[ next( dfs_preorder_nodes(self.sol_tree,source=parent_node_id) ) ][ "info"])
-        # print( [ (x,self.sol_tree.nodes[x]["info"]) for x in self.sol_tree.successors(parent_node_id) ] )
-        # print("THIS END")
-        # print( "ID_EXAMINE")
-        # print( prev_node_id )
-        # print( curr_node_id )
-        # print( [*dfs_preorder_nodes( self.sol_tree )] )
-        # print( sub_graph_root_node_id )
-        # print( parent_node_id )
+        # return iteration count and reachable most bottom-left node in subtree
         return _iter, next( dfs_preorder_nodes( self.sol_tree, marked_node_id ) )
 
     # ******************************        Class Method Declaration        ****************************************** #
@@ -519,54 +508,58 @@ class IPyHOP(object):
         return _id
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def _post_failure_modify(self, fail_node_id):
-
-        rev_pre_ord_nodes = reversed(list(dfs_preorder_nodes(self.sol_tree, source=0)))
-
-        for node_id in rev_pre_ord_nodes:
-
-            c_node = self.sol_tree.nodes[node_id]
-            c_node['status'] = 'O'
-
-            if node_id == fail_node_id:
-                break
-
-            c_type = c_node['type']
-            if c_type == 'T' or c_type == 'G' or c_type == 'M':
-                c_node['state'] = None
-                c_node['selected_method'] = None
-                c_node['available_methods'] = [*c_node['methods']]
-                c_node[ "selected_method_instances" ] = None
-                descendant_list = list(descendants(self.sol_tree, node_id))
-                self.sol_tree.remove_nodes_from(descendant_list)
-
-        max_id = -1
-        for node_id in self.sol_tree.nodes:
-            if node_id >= max_id:
-                max_id = node_id + 1
-            if 'state' in self.sol_tree.nodes[node_id]:
-                if self.sol_tree.nodes[node_id]['status'] == 'C':
-                    self.sol_tree.nodes[node_id]['state'] = self.state.copy()
-                else:
-                    self.sol_tree.nodes[node_id]['state'] = None
-
-        return max_id
+    # NO LONGER NEEDED
+    # def _post_failure_modify(self, fail_node_id):
+    #
+    #     rev_pre_ord_nodes = reversed(list(dfs_preorder_nodes(self.sol_tree, source=0)))
+    #
+    #     for node_id in rev_pre_ord_nodes:
+    #
+    #         c_node = self.sol_tree.nodes[node_id]
+    #         c_node['status'] = 'O'
+    #
+    #         if node_id == fail_node_id:
+    #             break
+    #
+    #         c_type = c_node['type']
+    #         if c_type == 'T' or c_type == 'G' or c_type == 'M':
+    #             c_node['state'] = None
+    #             c_node['selected_method'] = None
+    #             c_node['available_methods'] = [*c_node['methods']]
+    #             c_node[ "selected_method_instances" ] = None
+    #             descendant_list = list(descendants(self.sol_tree, node_id))
+    #             self.sol_tree.remove_nodes_from(descendant_list)
+    #
+    #     max_id = -1
+    #     for node_id in self.sol_tree.nodes:
+    #         if node_id >= max_id:
+    #             max_id = node_id + 1
+    #         if 'state' in self.sol_tree.nodes[node_id]:
+    #             if self.sol_tree.nodes[node_id]['status'] == 'C':
+    #                 self.sol_tree.nodes[node_id]['state'] = self.state.copy()
+    #             else:
+    #                 self.sol_tree.nodes[node_id]['state'] = None
+    #
+    #     return max_id
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _backtrack(self, p_node_id: int, c_node_id: int, verbose: Optional[int] = 0 ):
+
         c_node = self.sol_tree.nodes[c_node_id]
         c_type = c_node['type']
+        # reset c_node
         if c_type == 'T' or c_type == 'G' or c_type == 'M':
             c_node['state'] = None
             c_node['selected_method'] = None
             c_node['available_methods'] = [*c_node['methods']]
             c_node[ "selected_method_instances" ] = None
-
+        # mark succesive preorder nodes as open
         dfs_list = list(dfs_preorder_nodes(self.sol_tree, source=p_node_id))
         for node_id in reversed(dfs_list):
             node = self.sol_tree.nodes[node_id]
             if node['status'] == 'C':
                 node['status'] = 'O'
+                # unexpand subtree rooted at c_node
                 descendant_list = list(descendants(self.sol_tree, node_id))
                 if descendant_list:
                     self.sol_tree.remove_nodes_from(descendant_list)
@@ -574,7 +567,7 @@ class IPyHOP(object):
                     return p_node_id, node_id
                 if 'state' in node:
                     node['state'] = None
-
+        # we have backtracked to root node
         self.sol_tree.remove_nodes_from(list(descendants(self.sol_tree, 0)))
         return 0, 0
 
@@ -582,6 +575,7 @@ class IPyHOP(object):
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _goals_not_achieved(self, multigoal_node_id):
+        # insure that all subgoal of multigoal are achieved
         multigoal = self.sol_tree.nodes[multigoal_node_id]['info']
         unachieved = {}
         for name in vars(multigoal):
