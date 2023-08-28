@@ -25,7 +25,7 @@ class IPyHOP(object):
         To plan using the planner, you should use planner.plan(state, task_list).
     """
 
-    def __init__(self, methods: Methods, actions: Actions):
+    def __init__(self, methods: Methods, actions: Actions ):
         """
         IPyHOP Constructor.
 
@@ -42,7 +42,8 @@ class IPyHOP(object):
         self.iterations = None
         self.id_counter = 0
         self.node_expansions = 0
-
+        self.depth_step_size=None
+        self.max_depth = None
         self._verbose = 0
 
     _t_type = List[Tuple[str]]
@@ -52,7 +53,7 @@ class IPyHOP(object):
 
     # ******************************        Class Method Declaration        ****************************************** #
     def plan(self, state: State, task_list: _t_type, methods: _m_type = None, actions: _op_type = None,
-             verbose: Optional[int] = 0) -> _p_type:
+             verbose: Optional[int] = 0, depth_step_size: Union[int,None]=None) -> _p_type:
         """
         IPyHOP.plan(state_1, tasks) tells IPyHOP to find a plan for accomplishing the task_list (a list of tasks)
         *tasks*, starting from an initial state *state_1*, using whatever methods and actions IPyHOP was constructed
@@ -83,6 +84,9 @@ class IPyHOP(object):
         self.methods = self.methods if methods is None else methods
         self.actions = self.actions if actions is None else actions
         self._verbose = verbose
+        self.depth_step_size=depth_step_size
+        self.max_depth=depth_step_size
+        self.iterations = 0
 
         if self._verbose > 0:
             run_info = '**IPyHOP, verbose = {verbosity}: **\n\tstate = {state}\n\ttasks/goals = {task_list}.'
@@ -93,16 +97,27 @@ class IPyHOP(object):
 
         _id = 0
         parent_node_id = _id
-        self.sol_tree.add_node(_id, info=('root',), type='D', status='NA')
+        # NOTE should the root have 0 or -1 depth?
+        self.sol_tree.add_node(_id, info=('root',), type='D', status='NA', depth=0)
         _id = self._add_nodes_and_edges(_id, self.task_list)
 
-        self.iterations, _ = self._planning(parent_node_id)
-        assert is_tree(self.sol_tree), "Error! Solution graph is not a tree."
+        while True:
+            _iter, _ = self._planning(parent_node_id)
+            self.iterations += _iter
+            assert is_tree(self.sol_tree), "Error! Solution graph is not a tree."
 
-        # Store the planning solution as a list of actions to be executed.
-        for node_id in dfs_preorder_nodes(self.sol_tree, source=0):
-            if self.sol_tree.nodes[node_id]['type'] == 'A':
-                self.sol_plan.append( self.sol_tree.nodes[node_id]['info'] )
+            # Store the planning solution as a list of actions to be executed.
+            for node_id in dfs_preorder_nodes(self.sol_tree, source=0):
+                if self.sol_tree.nodes[node_id]['type'] == 'A':
+                    self.sol_plan.append( self.sol_tree.nodes[node_id]['info'] )
+            # if only root remains we need to increase max depth and try again
+            if len(self.sol_tree.nodes) > 1 or depth_step_size == None:
+                break
+            elif verbose>1:
+                print( "No solution for max depth of " + str(self.max_depth))
+                print( "Increasing max depth to " + str( self.max_depth + self.depth_step_size ) )
+            _id = self._add_nodes_and_edges( 0, self.task_list )
+            self.max_depth += self.depth_step_size
 
         # print(self.sol_tree.nodes[0])
         return self.sol_plan
@@ -172,36 +187,39 @@ class IPyHOP(object):
 
         # If current node is a Task
         if curr_node['type'] == 'T':
+
             subtasks = None
-            # If methods are available for refining the task, use them.
-            while curr_node[ 'available_methods' ] != [ ]:
-                # get method instance
-                if curr_node[ 'selected_method_instances' ] == None:
-                    method = curr_node[ 'available_methods' ][ 0 ]
-                    curr_node[ 'selected_method' ] = method
-                    # create method instance generator
-                    curr_node[ 'selected_method_instances' ] = method( self.state, *curr_node_info[ 1: ] )
-                try:
-                    subtasks = next( curr_node[ 'selected_method_instances' ] )
-                # exhausted all instances of selected method select new method
-                except StopIteration:
-                    # get next method
-                    curr_node[ 'available_methods' ].pop( 0 )
-                    if len( curr_node[ 'available_methods' ] ) > 0:
+            # consider failure if next decomposition would exceed max depth
+            if self.max_depth == None or curr_node["depth"] < self.max_depth:
+                # If methods are available for refining the task, use them.
+                while curr_node[ 'available_methods' ] != [ ]:
+                    # get method instance
+                    if curr_node[ 'selected_method_instances' ] == None:
                         method = curr_node[ 'available_methods' ][ 0 ]
                         curr_node[ 'selected_method' ] = method
                         # create method instance generator
                         curr_node[ 'selected_method_instances' ] = method( self.state, *curr_node_info[ 1: ] )
-                if subtasks is not None:
-                    curr_node[ 'status' ] = 'C'
-                    _id = self._add_nodes_and_edges( curr_node_id, subtasks )
-                    parent_node_id = curr_node_id
-                    if self._verbose > 2:
-                        print( 'Iteration {}, Task {} successfully refined'.format( _iter,
-                                                                                    repr( curr_node_info ) ) )
-                        print( 'Iteration {}, Parent node modified to {}.'.format(
-                            _iter, repr( self.sol_tree.nodes[ parent_node_id ][ 'info' ] ) ) )
-                    break
+                    try:
+                        subtasks = next( curr_node[ 'selected_method_instances' ] )
+                    # exhausted all instances of selected method select new method
+                    except StopIteration:
+                        # get next method
+                        curr_node[ 'available_methods' ].pop( 0 )
+                        if len( curr_node[ 'available_methods' ] ) > 0:
+                            method = curr_node[ 'available_methods' ][ 0 ]
+                            curr_node[ 'selected_method' ] = method
+                            # create method instance generator
+                            curr_node[ 'selected_method_instances' ] = method( self.state, *curr_node_info[ 1: ] )
+                    if subtasks is not None:
+                        curr_node[ 'status' ] = 'C'
+                        _id = self._add_nodes_and_edges( curr_node_id, subtasks )
+                        parent_node_id = curr_node_id
+                        if self._verbose > 2:
+                            print( 'Iteration {}, Task {} successfully refined'.format( _iter,
+                                                                                        repr( curr_node_info ) ) )
+                            print( 'Iteration {}, Parent node modified to {}.'.format(
+                                _iter, repr( self.sol_tree.nodes[ parent_node_id ][ 'info' ] ) ) )
+                        break
             if subtasks is None:
                 parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
                 if self._verbose > 2:
@@ -239,36 +257,38 @@ class IPyHOP(object):
                 if self._verbose > 2:
                     print('Iteration {}, Goal {} already achieved'.format(_iter, repr(curr_node_info)))
             else:
-                # If methods are available for refining the goal, use them.
-                while curr_node[ 'available_methods' ] != [ ]:
-                    # get method instance
-                    if curr_node[ 'selected_method_instances' ] == None:
-                        method = curr_node[ 'available_methods' ][ 0 ]
-                        curr_node[ 'selected_method' ] = method
-                        # create method instance generator
-                        curr_node[ 'selected_method_instances' ] = method( self.state, *curr_node_info[ 1: ] )
-                    try:
-                        subgoals = next( curr_node[ 'selected_method_instances' ] )
-                    # exhausted all instances of selected method select new method
-                    except StopIteration:
-                        # get next method
-                        curr_node[ 'available_methods' ].pop( 0 )
-                        if len( curr_node[ 'available_methods' ] ) > 0:
-
+                # consider failure if next decomposition would exceed max depth
+                if self.max_depth == None or curr_node[ "depth" ] < self.max_depth:
+                    # If methods are available for refining the goal, use them.
+                    while curr_node[ 'available_methods' ] != [ ]:
+                        # get method instance
+                        if curr_node[ 'selected_method_instances' ] == None:
                             method = curr_node[ 'available_methods' ][ 0 ]
                             curr_node[ 'selected_method' ] = method
                             # create method instance generator
                             curr_node[ 'selected_method_instances' ] = method( self.state, *curr_node_info[ 1: ] )
-                    if subgoals is not None:
-                        curr_node[ 'status' ] = 'C'
-                        _id = self._add_nodes_and_edges( curr_node_id, subgoals )
-                        parent_node_id = curr_node_id
-                        if self._verbose > 2:
-                            print( 'Iteration {}, Goal {} successfully refined'.format( _iter,
-                                                                                             repr( curr_node_info ) ) )
-                            print( 'Iteration {}, Parent node modified to {}.'.format(
-                                _iter, repr( self.sol_tree.nodes[ parent_node_id ][ 'info' ] ) ) )
-                        break
+                        try:
+                            subgoals = next( curr_node[ 'selected_method_instances' ] )
+                        # exhausted all instances of selected method select new method
+                        except StopIteration:
+                            # get next method
+                            curr_node[ 'available_methods' ].pop( 0 )
+                            if len( curr_node[ 'available_methods' ] ) > 0:
+
+                                method = curr_node[ 'available_methods' ][ 0 ]
+                                curr_node[ 'selected_method' ] = method
+                                # create method instance generator
+                                curr_node[ 'selected_method_instances' ] = method( self.state, *curr_node_info[ 1: ] )
+                        if subgoals is not None:
+                            curr_node[ 'status' ] = 'C'
+                            _id = self._add_nodes_and_edges( curr_node_id, subgoals )
+                            parent_node_id = curr_node_id
+                            if self._verbose > 2:
+                                print( 'Iteration {}, Goal {} successfully refined'.format( _iter,
+                                                                                                 repr( curr_node_info ) ) )
+                                print( 'Iteration {}, Parent node modified to {}.'.format(
+                                    _iter, repr( self.sol_tree.nodes[ parent_node_id ][ 'info' ] ) ) )
+                            break
             if subgoals is None:
                 parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
                 if self._verbose > 2:
@@ -286,43 +306,45 @@ class IPyHOP(object):
                 if self._verbose > 2:
                     print('Iteration {}, MultiGoal {} already achieved'.format(_iter, repr(curr_node_info)))
             else:
-                # If methods are available for refining the multigoal, use them.
-                while curr_node[ 'available_methods' ] != [ ]:
-                    # get method instance
-                    if curr_node[ 'selected_method_instances' ] == None:
-                        # get next method
-                        method = curr_node[ 'available_methods' ][ 0 ]
-                        # print( method )
-                        curr_node[ 'selected_method' ] = method
-                        # create method instance generator
-                        curr_node[ 'selected_method_instances' ] = method( self.state, curr_node_info )
-                    try:
-                        # print( curr_node[ 'selected_method_instances' ] )
-                        subgoals = next( curr_node[ 'selected_method_instances' ] )
-                        # print( subgoals )
-                    # exhausted all instances of selected method select new method
-                    except StopIteration:
-                        # get next method
-                        curr_node[ 'available_methods' ].pop( 0 )
-                        if len( curr_node[ 'available_methods' ] ) > 0:
-
+                # consider failure if next decomposition would exceed max depth
+                if self.max_depth == None or curr_node[ "depth" ] < self.max_depth:
+                    # If methods are available for refining the multigoal, use them.
+                    while curr_node[ 'available_methods' ] != [ ]:
+                        # get method instance
+                        if curr_node[ 'selected_method_instances' ] == None:
+                            # get next method
                             method = curr_node[ 'available_methods' ][ 0 ]
-                            # print(method)
+                            # print( method )
                             curr_node[ 'selected_method' ] = method
                             # create method instance generator
                             curr_node[ 'selected_method_instances' ] = method( self.state, curr_node_info )
-                            # print( method( self.state, curr_node_info ) )
-                            # print( [  *curr_node[ 'selected_method_instances' ] ] )
-                    if subgoals is not None:
-                        curr_node[ 'status' ] = 'C'
-                        _id = self._add_nodes_and_edges( curr_node_id, subgoals )
-                        parent_node_id = curr_node_id
-                        if self._verbose > 2:
-                            print( 'Iteration {}, MultiGoal {} successfully refined'.format( _iter,
-                                                                                        repr( curr_node_info ) ) )
-                            print( 'Iteration {}, Parent node modified to {}.'.format(
-                                _iter, repr( self.sol_tree.nodes[ parent_node_id ][ 'info' ] ) ) )
-                        break
+                        try:
+                            # print( curr_node[ 'selected_method_instances' ] )
+                            subgoals = next( curr_node[ 'selected_method_instances' ] )
+                            # print( subgoals )
+                        # exhausted all instances of selected method select new method
+                        except StopIteration:
+                            # get next method
+                            curr_node[ 'available_methods' ].pop( 0 )
+                            if len( curr_node[ 'available_methods' ] ) > 0:
+
+                                method = curr_node[ 'available_methods' ][ 0 ]
+                                # print(method)
+                                curr_node[ 'selected_method' ] = method
+                                # create method instance generator
+                                curr_node[ 'selected_method_instances' ] = method( self.state, curr_node_info )
+                                # print( method( self.state, curr_node_info ) )
+                                # print( [  *curr_node[ 'selected_method_instances' ] ] )
+                        if subgoals is not None:
+                            curr_node[ 'status' ] = 'C'
+                            _id = self._add_nodes_and_edges( curr_node_id, subgoals )
+                            parent_node_id = curr_node_id
+                            if self._verbose > 2:
+                                print( 'Iteration {}, MultiGoal {} successfully refined'.format( _iter,
+                                                                                            repr( curr_node_info ) ) )
+                                print( 'Iteration {}, Parent node modified to {}.'.format(
+                                    _iter, repr( self.sol_tree.nodes[ parent_node_id ][ 'info' ] ) ) )
+                            break
             if subgoals is None:
                 parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
                 if self._verbose > 2:
@@ -356,7 +378,7 @@ class IPyHOP(object):
         return curr_node_id, parent_node_id
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def replan(self, state: State, action_position: int, verbose: Optional[int] = 0) -> _p_type:
+    def replan(self, state: State, action_position: int, verbose: Optional[int] = 0, depth_step_size: Union[int,None]=None) -> _p_type:
         sol_tree = self.sol_tree
         # get node id of action
         dfs_node_ids = [*dfs_preorder_nodes( sol_tree )]
@@ -471,38 +493,39 @@ class IPyHOP(object):
     # ******************************        Class Method Declaration        ****************************************** #
     def _add_nodes_and_edges(self, parent_node_id: int, children_node_info_list: List[Tuple[str]]):
         _id = None
+        parent_depth=self.sol_tree.nodes[parent_node_id]["depth"]
         for child_node_info in children_node_info_list:
             _id = self.get_next_id()
             if isinstance(child_node_info, MultiGoal):  # equivalent to type(child_node_info) == MultiGoal
                 relevant_methods = self.methods.multigoal_method_dict[child_node_info.goal_tag]
                 self.sol_tree.add_node(_id, info=child_node_info, type='M', status='O', state=None,
                                        selected_method=None, available_methods=[*relevant_methods],
-                                       methods=relevant_methods, selected_method_instances=None )
+                                       methods=relevant_methods, selected_method_instances=None, depth=parent_depth+1 )
                 self.sol_tree.add_edge(parent_node_id, _id)
             elif child_node_info[0] in self.methods.task_method_dict:
                 relevant_methods = self.methods.task_method_dict[child_node_info[0]]
                 self.sol_tree.add_node(_id, info=child_node_info, type='T', status='O', state=None,
                                        selected_method=None, available_methods=[*relevant_methods],
-                                       methods=relevant_methods, selected_method_instances=None)
+                                       methods=relevant_methods, selected_method_instances=None, depth=parent_depth+1)
                 self.sol_tree.add_edge(parent_node_id, _id)
             elif child_node_info[0] in self.actions.action_dict:
                 action = self.actions.action_dict[child_node_info[0]]
-                self.sol_tree.add_node(_id, info=child_node_info, type='A', status='O', action=action)
+                self.sol_tree.add_node(_id, info=child_node_info, type='A', status='O', action=action, depth=parent_depth+1)
                 self.sol_tree.add_edge(parent_node_id, _id)
             elif child_node_info[0] in self.methods.goal_method_dict:
                 relevant_methods = self.methods.goal_method_dict[child_node_info[0]]
                 self.sol_tree.add_node(_id, info=child_node_info, type='G', status='O', state=None,
                                        selected_method=None, available_methods=[*relevant_methods],
-                                       methods=relevant_methods, selected_method_instances=None)
+                                       methods=relevant_methods, selected_method_instances=None, depth=parent_depth+1)
                 self.sol_tree.add_edge(parent_node_id, _id)
 
         if self.sol_tree.nodes[parent_node_id]['type'] == 'G':
             _id = self.get_next_id()
-            self.sol_tree.add_node(_id, info='VerifyGoal', type='VG', status='O')
+            self.sol_tree.add_node(_id, info='VerifyGoal', type='VG', status='O', depth=parent_depth+1)
             self.sol_tree.add_edge(parent_node_id, _id)
         elif self.sol_tree.nodes[parent_node_id]['type'] == 'M':
             _id = self.get_next_id()
-            self.sol_tree.add_node(_id, info='VerifyMultiGoal', type='VM', status='O')
+            self.sol_tree.add_node(_id, info='VerifyMultiGoal', type='VM', status='O', depth=parent_depth+1)
             self.sol_tree.add_edge(parent_node_id, _id)
 
         return _id

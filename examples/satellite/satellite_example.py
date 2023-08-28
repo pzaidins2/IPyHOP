@@ -118,7 +118,7 @@ def init_sat( pddl_str, actions, methods ):
     return state_0, goal_a, rigid
 # ******************************************        Main Program Start       ***************************************** #
 def main():
-    while True:
+    # while True:
         for problem_file_name in [ "problems/" + x for x in os.listdir( "problems" ) ]:
             if "pddl" not in problem_file_name:
                 continue
