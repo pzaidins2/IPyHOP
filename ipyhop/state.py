@@ -50,6 +50,13 @@ class State(object):
     def shallow_copy( self ):
         return copy( self )
 
+    # ******************************        Class Method Declaration        ****************************************** #
+    def __eq__( self, other ):
+        # states are equal if all subparts are equal
+        vars_self = vars(self)
+        vars_other = vars(other)
+        return vars_self == vars_other
+
 
 # ******************************************    Class Declaration End       ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #

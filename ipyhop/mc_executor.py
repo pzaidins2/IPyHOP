@@ -43,7 +43,7 @@ class MonteCarloExecutor(object):
                     self.exec_list[ -1 ] = (self.exec_list[ -1 ][ 0 ], deviation_state)
                     result_state = act_func( deviation_state, *act_params )
             self.exec_list.append( (act_inst, result_state) )
-            if result_state == None:
+            if result_state is None:
                 return self.exec_list
             state_copy = result_state.copy()
         return self.exec_list

@@ -72,7 +72,7 @@ class Actor:
             #     if verbose >= 1:
             #         print( "No plan is possible..." )
             #     break
-            if state_list[ -1 ] != None:
+            if state_list[ -1 ] is not None:
                 plan_success = True
                 history += [ *action_list[ 1: ] ]
                 if verbose >= 1:
@@ -108,7 +108,7 @@ class Actor:
 
                 if len( [ *self.planner.sol_tree.nodes ] ) == 1:
                     plan_impossible = True
-                    raise( "No plan is possible...")
+                    raise( ValueError( "No plan is possible..." ) )
                     break
                 else:
                     if verbose >= 2:

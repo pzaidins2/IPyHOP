@@ -6,7 +6,10 @@ File Description: File used for definition of IPyHOP Class.
 # ******************************************    Libraries to be imported    ****************************************** #
 from __future__ import print_function, division
 from itertools import count
-from typing import List, Tuple, Union, Optional
+from typing import List, Tuple, Union, Optional, Dict
+
+import networkx as nx
+
 from ipyhop.methods import Methods
 from ipyhop.actions import Actions
 from ipyhop.state import State
@@ -53,7 +56,7 @@ class IPyHOP(object):
 
     # ******************************        Class Method Declaration        ****************************************** #
     def plan(self, state: State, task_list: _t_type, methods: _m_type = None, actions: _op_type = None,
-             verbose: Optional[int] = 0, depth_step_size: Union[int,None]=None) -> _p_type:
+             verbose: Optional[int] = 0, initial_max_depth: Union[int,None]=None, depth_step_size: Union[int,None]=None) -> _p_type:
         """
         IPyHOP.plan(state_1, tasks) tells IPyHOP to find a plan for accomplishing the task_list (a list of tasks)
         *tasks*, starting from an initial state *state_1*, using whatever methods and actions IPyHOP was constructed
@@ -85,7 +88,7 @@ class IPyHOP(object):
         self.actions = self.actions if actions is None else actions
         self._verbose = verbose
         self.depth_step_size=depth_step_size
-        self.max_depth=depth_step_size
+        self.max_depth=initial_max_depth if initial_max_depth is not None else depth_step_size
         self.iterations = 0
 
         if self._verbose > 0:
@@ -113,7 +116,7 @@ class IPyHOP(object):
             # if only root remains we need to increase max depth and try again
             if len(self.sol_tree.nodes) > 1 or depth_step_size == None:
                 break
-            elif verbose>1:
+            elif verbose>0:
                 print( "No solution for max depth of " + str(self.max_depth))
                 print( "Increasing max depth to " + str( self.max_depth + self.depth_step_size ) )
             _id = self._add_nodes_and_edges( 0, self.task_list )
@@ -190,6 +193,7 @@ class IPyHOP(object):
 
             subtasks = None
             # consider failure if next decomposition would exceed max depth
+            # print(curr_node["depth"], self.max_depth)
             if self.max_depth == None or curr_node["depth"] < self.max_depth:
                 # If methods are available for refining the task, use them.
                 while curr_node[ 'available_methods' ] != [ ]:
@@ -233,6 +237,8 @@ class IPyHOP(object):
             # If the Action is not blacklisted
             if curr_node_info not in self.blacklist:
                 new_state = curr_node['action'](self.state.copy(), *curr_node_info[1:])
+                if new_state is None or self.branch_cyclic( new_state, curr_node_id ):
+                    new_state = None
                 # If Action was successful, update the state.
                 if new_state is not None:
                     curr_node['status'] = 'C'
@@ -240,6 +246,7 @@ class IPyHOP(object):
                     if self._verbose > 2:
                         print('Iteration {}, Action {} successful.'.format(_iter, repr(curr_node_info)))
             if new_state is None:
+
                 parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
                 if self._verbose > 2:
                     print('Iteration {}, Action {} failed.'.format(_iter, repr(curr_node_info)))
@@ -408,7 +415,8 @@ class IPyHOP(object):
             # get top of stack
             node_id = node_id_stack[ 0 ]
             # root has no parent we have exhausted all methods
-
+            if node_id == 0:
+                break
             true_state = state_stack[ 0 ]
             # get parent id
             parent_id = next( sol_tree.predecessors( node_id ) )
@@ -645,7 +653,7 @@ class IPyHOP(object):
         # print("SIMULATE")
         for i, action in enumerate( act_plan[ start_ind: ] ):
             curr_state = self.actions.action_dict[action[0]](prev_state, *action[1:])
-            if curr_state == None:
+            if curr_state is None:
                 return ( prev_state, start_ind + i, False )
             prev_state = curr_state
         return ( curr_state, len( act_plan ) - 1, True )
@@ -668,15 +676,94 @@ class IPyHOP(object):
         return self.id_counter
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def is_dependency_of(self, node_1_id: int, node_2_id: int) -> bool:
-        """
-                returns True if node_2 occurs after node_1 in preorder sort or is node_1
+    # returns true if the new state for the node at node_id is equal to any state on the path from that node
+    # to the root, else returns false
+    def branch_cyclic( self, new_state: State, node_id: int ) -> bool:
+        # return False
+        sol_tree = self.sol_tree
+        sol_tree_nodes = sol_tree.nodes
+        node_ancestors = ancestors( sol_tree, node_id )
+        # do want to look at root which is stateless
+        node_ancestors.remove(0)
+        ancestor_states = map( lambda x: sol_tree_nodes[x]["state"], node_ancestors )
 
+        return any( new_state == a_node_state for a_node_state in ancestor_states )
+
+    # # ******************************        Class Method Declaration        ****************************************** #
+    # def is_dependency_of(self, node_1_id: int, node_2_id: int) -> bool:
+    #     """
+    #             returns True if node_2 occurs after node_1 in preorder sort or is node_1
+    #
+    #     """
+    #     # get tree in preorder
+    #     preorder_nodes = dfs_preorder_nodes( 0 )
+    #     if preorder_nodes.index( node_1_id ) <= preorder_nodes.index( node_1_id ):
+    #         return True
+
+    # ******************************        Class Method Declaration        ****************************************** #
+    #
+    def hddl_plan_str( self, name_mapping: Dict[str,str]=None ):
         """
-        # get tree in preorder
-        preorder_nodes = dfs_preorder_nodes( 0 )
-        if preorder_nodes.index( node_1_id ) <= preorder_nodes.index( node_1_id ):
-            return True
+                returns plan as string in HDDL compliant output (per IPC)
+                node ID is used for action and method ID
+        """
+        sol_tree = self.sol_tree
+        # output header
+        output_str = "==>\n"
+        # plan
+        preorder_node_ids = [ *dfs_preorder_nodes( sol_tree ) ]
+        dfs_action_node_ids = [ *filter( lambda x: sol_tree.nodes[ x ][ "type" ] == "A", preorder_node_ids ) ]
+        dfs_action_nodes = [*map( lambda x: (x, sol_tree.nodes[ x ]), dfs_action_node_ids )]
+        # unpack each action into string
+        for node_id, node in dfs_action_nodes:
+            # id
+            output_str += str(node_id) + " "
+            # action name and arguements
+            for arg in node[ "info" ]:
+                arg_str = str( arg )
+                if name_mapping is not None:
+                    arg_str = name_mapping[ arg_str ]
+                output_str += arg_str + " "
+            output_str += "\n"
+        # decomposition
+        output_str += "\n"
+        dfs_nonaction_node_ids = [ *filter( lambda x: sol_tree.nodes[ x ][ "type" ] != "A", preorder_node_ids ) ]
+        dfs_nonaction_nodes = [ *map( lambda x: (x, sol_tree.nodes[ x ]), dfs_nonaction_node_ids ) ]
+        # unpack each method into string
+        for node_id, node in dfs_nonaction_nodes:
+            node_info = node[ "info" ]
+            # root node
+            if node_id == 0:
+                output_str += node_info[ 0 ] + " "
+                # top level children
+                for child_id in nx.neighbors(sol_tree,node_id):
+                    output_str += str(child_id) + " "
+
+            else:
+                # all other nonprimitive nodes
+                # id
+                output_str += str( node_id ) + " "
+                # method name and arguments
+                for arg in node[ "info" ]:
+                    arg_str = str( arg )
+                    if name_mapping is not None:
+                        arg_str = name_mapping[ arg_str ]
+                    output_str += arg_str + " "
+                # subtasks
+                output_str += "-> "
+                # method of decomposition
+                decomp_str = node["selected_method"].func.__name__
+                if name_mapping is not None:
+                    decomp_str = name_mapping[ decomp_str ]
+                output_str += decomp_str + " "
+                # child node ids
+                for child_id in nx.neighbors(sol_tree,node_id):
+                    output_str += str(child_id) + " "
+            output_str += "\n"
+        output_str += "<==\n"
+        return output_str
+
+
 
 
 # ******************************************    Class Declaration End       ****************************************** #
