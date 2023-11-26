@@ -16,7 +16,8 @@ from ipyhop.state import State
 from ipyhop.mulitgoal import MultiGoal
 from networkx import DiGraph, dfs_preorder_nodes, descendants, is_tree, ancestors
 from copy import deepcopy
-
+import re
+import keyword
 
 # ******************************************    Class Declaration Start     ****************************************** #
 class IPyHOP(object):
@@ -53,6 +54,16 @@ class IPyHOP(object):
     _m_type = Optional[Methods]
     _op_type = Optional[Actions]
     _p_type = Union[List[Tuple[str]], bool]
+    # group 0: node id
+    # group 1: task/action string
+    # group 2: child node ids
+    re_shop_top_level = re.compile( "^([0-9]+?)\s\((.+?)\)(\s->\s)?(.*?)$",
+                                    flags=re.MULTILINE | re.DOTALL )
+    # group 5
+    re_task = re.compile( "(.+?)(?=\s|$)",
+                          flags=re.MULTILINE | re.DOTALL )
+
+
 
     # ******************************        Class Method Declaration        ****************************************** #
     def plan(self, state: State, task_list: _t_type, methods: _m_type = None, actions: _op_type = None,
@@ -752,7 +763,10 @@ class IPyHOP(object):
                 # subtasks
                 output_str += "-> "
                 # method of decomposition
-                decomp_str = node["selected_method"].func.__name__
+                try:
+                    decomp_str = node["selected_method"].func.__name__
+                except AttributeError:
+                    decomp_str = node[ "selected_method" ].__name__
                 if name_mapping is not None:
                     decomp_str = name_mapping[ decomp_str ]
                 output_str += decomp_str + " "
@@ -764,7 +778,94 @@ class IPyHOP(object):
         return output_str
 
 
+    # Given SHOP plan file as file path, duplciate plan
+    def read_SHOP( self, SHOP_sol_tree_path: str):
+        re_shop_top_level = self.re_shop_top_level
+        re_task= self.re_task
+        # make empty solution tree
+        self.plan( { }, [ ] )
+        # read in SHOP tree
+        with open( SHOP_sol_tree_path, "r" ) as f:
+            shop_str = f.read()
+        # list of match tuples
+        top_level = re_shop_top_level.findall( shop_str )
+        # add nodes first
+        sol_tree = self.sol_tree
+        info_dict = dict()
+        info_dict[ 0 ] = { "info": ("root",), "type": "D", "status": 'C', "state": None, "depth": None }
+        # get child node ids
+        child_id_set = set()
+        # for each tuple add node and edges
+        for str_tuple in top_level:
+            print( str_tuple )
+            # id as int
+            task_id = int( str_tuple[ 0 ] )
+            # find name (grab first match for name) and clean
+            print( str_tuple[ 1 ] )
+            parameter_list = [ ]
+            print( re_task.findall( str_tuple[ 1 ] ) )
+            for i, parameter in enumerate( re_task.findall( str_tuple[ 1 ] ) ):
+                print( parameter )
+                parameter_list.append( clean_string( parameter ) )
+            task_name = parameter_list[ 0 ]
+            # build node dict
+            case = "A" if str_tuple[ 2 ] == "" else "T"
+            info_dict[ task_id ] = {
+                "info": tuple( parameter_list ),
+                "type": case,
+                "status": 'C',
+                "state": None,
+                "depth": None
+            }
+            methods = self.methods
+            # make tree skeleton
+            if case == "T":
+                # attach correct methods
+                child_ids = str_tuple[ 3 ].split()
+                print( [ *methods.task_method_dict[ task_name ] ][ 0 ].__name__ )
+                method_name = clean_string( child_ids.pop( 0 ) )
+                info_dict[ task_id ].update(
+                    {
+                        "selected_method":
+                            [ *filter( lambda x: x.__name__ == method_name, methods.task_method_dict[ task_name ] ) ][
+                                0 ],
+                        "available_methods": [ *methods.task_method_dict[ task_name ] ],
+                        "methods": [ *methods.task_method_dict[ task_name ] ],
+                        "selected_method_instances": None,
+                    }
+                )
+                # add children
+                child_id_list = [ *map( int, child_ids ) ]
+                task_from_edge_list = [ *map( lambda x: (task_id, x), child_id_list ) ]
+                sol_tree.add_edges_from( task_from_edge_list )
+                # any task that is a child may never be an
+                child_id_set |= { *child_id_list }
+        # get all top level tasks and add as root children
+        top_level_task_id_list = [ *sorted( { *sol_tree.nodes } - child_id_set - { 0 } ) ]
+        root_child_edges = map( lambda x: (0, x), top_level_task_id_list )
+        sol_tree.add_edges_from( root_child_edges )
+        # fill in node info for all nodes
+        for node_id in sol_tree.nodes:
+            node = sol_tree.nodes[ node_id ]
+            for k, v in info_dict[ node_id ].items():
+                node[ k ] = v
 
+# takes PDDL strings and makes them assignable to python boundVars
+def clean_string( input_str: str ) -> str:
+    # ? must be removed
+    new_str = input_str.replace( "?", "" )
+    # ! must be removed
+    new_str = new_str.replace( "!", "" )
+    # - must be replaced with _
+    new_str = new_str.replace( "-", "__" )
+    # PDDL is case insensitive so we are going to make everything lower case
+    new_str = new_str.lower()
+    # we cannot allow keywords
+    if keyword.iskeyword(new_str):
+        new_str += "___"
+    # remove leading and trailing
+    new_str = new_str.strip()
+    return new_str
 
 # ******************************************    Class Declaration End       ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #
