@@ -14,7 +14,7 @@ from ipyhop.methods import Methods
 from ipyhop.actions import Actions
 from ipyhop.state import State
 from ipyhop.mulitgoal import MultiGoal
-from networkx import DiGraph, dfs_preorder_nodes, descendants, is_tree, ancestors
+from networkx import DiGraph, dfs_preorder_nodes, descendants, is_tree, ancestors, bfs_successors
 from copy import deepcopy
 import re
 import keyword
@@ -779,7 +779,7 @@ class IPyHOP(object):
 
 
     # Given SHOP plan file as file path, duplciate plan
-    def read_SHOP( self, SHOP_sol_tree_path: str):
+    def read_SHOP( self, SHOP_sol_tree_path: str, inital_state: State):
         re_shop_top_level = self.re_shop_top_level
         re_task= self.re_task
         # make empty solution tree
@@ -792,20 +792,16 @@ class IPyHOP(object):
         # add nodes first
         sol_tree = self.sol_tree
         info_dict = dict()
-        info_dict[ 0 ] = { "info": ("root",), "type": "D", "status": 'C', "state": None, "depth": None }
+        info_dict[ 0 ] = { "info": ("root",), "type": "D", "status": 'C', "state": None, "depth": 0 }
         # get child node ids
         child_id_set = set()
         # for each tuple add node and edges
         for str_tuple in top_level:
-            print( str_tuple )
             # id as int
             task_id = int( str_tuple[ 0 ] )
             # find name (grab first match for name) and clean
-            print( str_tuple[ 1 ] )
             parameter_list = [ ]
-            print( re_task.findall( str_tuple[ 1 ] ) )
             for i, parameter in enumerate( re_task.findall( str_tuple[ 1 ] ) ):
-                print( parameter )
                 parameter_list.append( clean_string( parameter ) )
             task_name = parameter_list[ 0 ]
             # build node dict
@@ -822,13 +818,15 @@ class IPyHOP(object):
             if case == "T":
                 # attach correct methods
                 child_ids = str_tuple[ 3 ].split()
-                print( [ *methods.task_method_dict[ task_name ] ][ 0 ].__name__ )
                 method_name = clean_string( child_ids.pop( 0 ) )
+                # allows for partial function currying
+                try:
+                    selected_method_name = [ *filter( lambda x: x.func.__name__ == method_name, methods.task_method_dict[ task_name ] ) ][0]
+                except AttributeError:
+                    selected_method_name = [ *filter( lambda x: x.__name__ == method_name, methods.task_method_dict[ task_name ] ) ][0]
                 info_dict[ task_id ].update(
                     {
-                        "selected_method":
-                            [ *filter( lambda x: x.__name__ == method_name, methods.task_method_dict[ task_name ] ) ][
-                                0 ],
+                        "selected_method": selected_method_name,
                         "available_methods": [ *methods.task_method_dict[ task_name ] ],
                         "methods": [ *methods.task_method_dict[ task_name ] ],
                         "selected_method_instances": None,
@@ -849,6 +847,46 @@ class IPyHOP(object):
             node = sol_tree.nodes[ node_id ]
             for k, v in info_dict[ node_id ].items():
                 node[ k ] = v
+        # get plan node ids
+        sol_tree_nodes = sol_tree.nodes
+        plan_node_ids = [*filter( lambda x: sol_tree_nodes[x]["type"] == "A", dfs_preorder_nodes(sol_tree) )]
+        sol_plan = [*map( lambda x: sol_tree_nodes[x]["info"], plan_node_ids )]
+        self.sol_plan = sol_plan
+        # simulate state progression
+        state_list = self.simulate(inital_state,start_ind=0)
+        # in reverse order assign states to ancestors
+        for act_id, act_state in zip(reversed(plan_node_ids), reversed(state_list[:-1])):
+            ancestor_id_set = ({*ancestors(sol_tree,act_id)} - {0}) | {act_id}
+            for ancestor_id in ancestor_id_set:
+                sol_tree_nodes[ancestor_id]["state"] = act_state.copy()
+        # for methods without action descendants copy from left
+        preorder_node_ids = [*dfs_preorder_nodes(sol_tree)]
+        rev_preorder_node_ids = [*reversed(preorder_node_ids)]
+        for i in range(len(preorder_node_ids)):
+            node_id = rev_preorder_node_ids[i]
+            # method without action descendant
+            if node_id != 0 and ( "state" not in sol_tree_nodes[ node_id ].keys() or sol_tree_nodes[ node_id ][ "state" ] is None ):
+                # tail end
+                if node_id == rev_preorder_node_ids[0]:
+                    sol_tree_nodes[ node_id ][ "state" ] = state_list[-1].copy()
+                # base case
+                else:
+                    next_node_id = rev_preorder_node_ids[i-1]
+                    sol_tree_nodes[ node_id ][ "state" ] = sol_tree_nodes[ next_node_id ][ "state" ].copy()
+        # set depth
+        node_depth = 0
+        for parent_id, child_id_list in bfs_successors(sol_tree,0):
+            node_depth = sol_tree_nodes[parent_id]["depth"] + 1
+            for node_id in child_id_list:
+                sol_tree_nodes[ node_id ][ "depth" ] = node_depth
+
+        return
+
+
+
+
+
+
 
 # takes PDDL strings and makes them assignable to python boundVars
 def clean_string( input_str: str ) -> str:
