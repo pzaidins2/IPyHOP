@@ -12,5 +12,6 @@ setup(
     install_requires=[
         "numpy",
         "networkx",
+        "matplotlib"
     ]
 )
