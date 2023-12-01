@@ -9,7 +9,7 @@ Derived from:
     Author: Yash Bansod
     Copyright (c) 2022, Yash Bansod
 """
-
+import ipyhop
 from ipyhop.mc_executor import MonteCarloExecutor
 from ipyhop.state import State
 from ipyhop.mulitgoal import MultiGoal
