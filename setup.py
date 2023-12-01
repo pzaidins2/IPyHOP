@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='IPyHOPPER',
-    version='',
+    version='0',
     packages=[ 'ipyhop' ],
     url='https://github.com/pzaidins2/IPyHOPPER.git',
     license='',
