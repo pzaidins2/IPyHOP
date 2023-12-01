@@ -9,4 +9,8 @@ setup(
     author='paulz',
     author_email='pzaidins@umd.edu',
     description='IPyHOPPER HTN Planner',
+    install_requires=[
+        "numpy",
+        "networkx",
+    ]
 )
