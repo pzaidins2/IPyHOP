@@ -879,7 +879,7 @@ class IPyHOP(object):
             node_depth = sol_tree_nodes[parent_id]["depth"] + 1
             for node_id in child_id_list:
                 sol_tree_nodes[ node_id ][ "depth" ] = node_depth
-
+        self.id_counter = max( sol_tree.nodes )
         return
 
 
