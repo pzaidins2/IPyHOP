@@ -824,6 +824,9 @@ class IPyHOP(object):
                     selected_method_name = [ *filter( lambda x: x.func.__name__ == method_name, methods.task_method_dict[ task_name ] ) ][0]
                 except AttributeError:
                     selected_method_name = [ *filter( lambda x: x.__name__ == method_name, methods.task_method_dict[ task_name ] ) ][0]
+                except KeyError:
+                    raise KeyError("Input tree contains method, " + method_name +
+                                   ", but no method of this name was found in the domain definition")
                 info_dict[ task_id ].update(
                     {
                         "selected_method": selected_method_name,
