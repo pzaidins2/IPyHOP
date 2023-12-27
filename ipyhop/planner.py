@@ -841,6 +841,14 @@ class IPyHOP(object):
                 sol_tree.add_edges_from( task_from_edge_list )
                 # any task that is a child may never be an
                 child_id_set |= { *child_id_list }
+            # name action
+            else:
+                action_name = task_name
+                info_dict[ task_id ].update(
+                    {
+                        "action": action_name,
+                    }
+                )
         # get all top level tasks and add as root children
         top_level_task_id_list = [ *sorted( { *sol_tree.nodes } - child_id_set - { 0 } ) ]
         root_child_edges = map( lambda x: (0, x), top_level_task_id_list )
