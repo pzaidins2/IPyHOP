@@ -827,6 +827,10 @@ class IPyHOP(object):
                 except KeyError:
                     raise KeyError("Input tree contains method, " + method_name +
                                    ", but no method of this name was found in the domain definition")
+                except IndexError:
+                    raise KeyError("Input tree contains method, " + method_name +
+                                   ", but no method of this name was found in the domain definition")
+
                 info_dict[ task_id ].update(
                     {
                         "selected_method": selected_method_name,
