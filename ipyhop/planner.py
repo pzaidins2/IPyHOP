@@ -792,7 +792,7 @@ class IPyHOP(object):
         # add nodes first
         sol_tree = self.sol_tree
         info_dict = dict()
-        info_dict[ 0 ] = { "info": ("root",), "type": "D", "status": 'NA', "state": None, "depth": 0 }
+        info_dict[ 0 ] = { "info": ("root",), "type": "D", "status": 'NA', "depth": 0 }
         # get child node ids
         child_id_set = set()
         # for each tuple add node and edges
