@@ -852,24 +852,7 @@ class IPyHOP(object):
                 child_id_set |= { *child_id_list }
             # name action
             else:
-                action_name = task_name
-                # allows for partial function currying
-                try:
-                    # partial case
-                    action_func = \
-                    [ *filter( lambda x: x.func.__name__ == action_name, actions.action_dict[ action_name ] ) ][ 0 ]
-                except AttributeError:
-                    # normal case
-                    action_func = \
-                    [ *filter( lambda x: x.__name__ == action_name, actions.action_dict[ action_name ] ) ][ 0 ]
-                except KeyError:
-                    # action not found
-                    raise KeyError( "Input tree contains action, " + action_name +
-                                    ", but no action of this name was found in the domain definition" )
-                except IndexError:
-                    # action not found
-                    raise KeyError( "Input tree contains action, " + action_name +
-                                    ", but no action of this name was found in the domain definition" )
+                action_func = actions.action_dict[ task_name ]
                 info_dict[ task_id ].update(
                     {
                         "action": action_func,
