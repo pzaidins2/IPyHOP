@@ -814,6 +814,7 @@ class IPyHOP(object):
                 "depth": None
             }
             methods = self.methods
+            actions = self.actions
             # make tree skeleton
             if case == "T":
                 # attach correct methods
@@ -821,13 +822,17 @@ class IPyHOP(object):
                 method_name = clean_string( child_ids.pop( 0 ) )
                 # allows for partial function currying
                 try:
+                    # partial case
                     selected_method_name = [ *filter( lambda x: x.func.__name__ == method_name, methods.task_method_dict[ task_name ] ) ][0]
                 except AttributeError:
+                    # normal case
                     selected_method_name = [ *filter( lambda x: x.__name__ == method_name, methods.task_method_dict[ task_name ] ) ][0]
                 except KeyError:
+                    # method not found
                     raise KeyError("Input tree contains method, " + method_name +
                                    ", but no method of this name was found in the domain definition")
                 except IndexError:
+                    # method not found
                     raise KeyError("Input tree contains method, " + method_name +
                                    ", but no method of this name was found in the domain definition")
 
@@ -848,9 +853,26 @@ class IPyHOP(object):
             # name action
             else:
                 action_name = task_name
+                # allows for partial function currying
+                try:
+                    # partial case
+                    action_func = \
+                    [ *filter( lambda x: x.func.__name__ == action_name, actions.action_dict[ action_name ] ) ][ 0 ]
+                except AttributeError:
+                    # normal case
+                    action_func = \
+                    [ *filter( lambda x: x.__name__ == action_name, actions.action_dict[ action_name ] ) ][ 0 ]
+                except KeyError:
+                    # action not found
+                    raise KeyError( "Input tree contains action, " + action_name +
+                                    ", but no action of this name was found in the domain definition" )
+                except IndexError:
+                    # action not found
+                    raise KeyError( "Input tree contains action, " + action_name +
+                                    ", but no action of this name was found in the domain definition" )
                 info_dict[ task_id ].update(
                     {
-                        "action": action_name,
+                        "action": action_func,
                     }
                 )
         # get all top level tasks and add as root children
