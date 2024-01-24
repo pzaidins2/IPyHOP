@@ -51,18 +51,23 @@ class Actor:
         plan_impossible = False
         plan_success = False
         exec_index = 0
-        if len( [ *self.planner.sol_tree.nodes ] ) == 1:
+        # if len( [ *self.planner.sol_tree.nodes ] ) == 1:
+        #     plan_impossible = True
+        #     if verbose > 0:
+        #         print("No Plan is possible")
+        #     raise ("No plan is possible...")
+        # original plan failed
+        if plan is False:
             plan_impossible = True
-            raise ("No plan is possible...")
         while not ( plan_impossible or plan_success ):
             # execute until success or failure
-            # print("EXECUTE START")
-            # print( plan[ exec_index: ] )
+
             exec_result = self.executor.execute( curr_state, plan[ exec_index: ] )
-            # print(plan)
-            # print( "EXECUTE END" )
-            # print(exec_result)
-            # print( "EXECUTE RESULT" )
+            # catch plan failures
+            if exec_result is False:
+                plan_impossible = True
+                break
+
             # unzip list of tuples into seperate lists
             action_list, state_list = [ *zip( *exec_result ) ]
             # if no state is None plan executed successfully
@@ -90,6 +95,7 @@ class Actor:
                 assert plan[ exec_index ] == action_list[ action_index ]
                 # replan
                 curr_state = state_list[ -2 ]
+                replan_result = None
                 if type( self.planner ) == IPyHOP:
                     plan, exec_index = self.planner.replan( curr_state, exec_index, verbose )
                 elif type( self.planner ) == IPyHOP_Old:
@@ -100,15 +106,16 @@ class Actor:
                     else:
                         fail_node_id = plan_node_ids[ exec_index  ]
                     assert self.planner.sol_tree.nodes[ fail_node_id ][ "info" ] == action_list[ action_index ]
-                    plan, plan_node_ids = self.planner.replan( curr_state, fail_node_id, verbose )
+                    replan_result = self.planner.replan( curr_state, fail_node_id, verbose )
+                    replan_result = plan, plan_node_ids
                     exec_index = 0
                 else:
-                    raise( "Invalid Planner" )
+                    raise( ValueError( "Invalid Planner" ) )
                 did_replan = True
 
-                if len( [ *self.planner.sol_tree.nodes ] ) == 1:
+                if replan_result is False:
                     plan_impossible = True
-                    raise( ValueError( "No plan is possible..." ) )
+                    print( "No Plan Repair Exists")
                     break
                 else:
                     if verbose >= 2:
@@ -118,8 +125,10 @@ class Actor:
             print("History:")
             for act in history:
                 print(act)
-
-        return history
+        if plan_impossible:
+            return False
+        else:
+            return history
 
 
 

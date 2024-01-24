@@ -163,8 +163,8 @@ def mgm_split_multigoal(state, multigoal):
             goal_list.append((state_var_name, arg, val))
     if goal_list:
         # achieve goals, then check whether they're all simultaneously true
-        yield goal_list + [multigoal]
-    yield goal_list
+        return goal_list + [multigoal]
+    return goal_list
 
 
 # ******************************************    Demo / Test Routine         ****************************************** #

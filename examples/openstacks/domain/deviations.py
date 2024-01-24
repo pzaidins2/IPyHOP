@@ -36,7 +36,7 @@ class shopfixer_deviation_handler():
         # getting all valid deviation for current state and ation
         for d_operator in self.deviation_operators:
             for d_state in d_operator( act_tuple, state ):
-                if d_state != None:
+                if d_state is not None:
                     deviation_states.append(d_state)
         self.deviation_state_count = len( deviation_states )
         if self.deviation_state_count > 0:
@@ -52,7 +52,7 @@ class shopfixer_deviation_handler():
         self.determine_deviation( plan[plan_index], state )
         # regularize deviation possibility
         # we want states with many deviations to be more likely to produce a mutation
-        if self.chosen_deviation == None:
+        if self.chosen_deviation is None:
             return state
         else:
             # trigger deviation with probability modified by possible deviation

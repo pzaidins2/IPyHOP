@@ -67,7 +67,8 @@ class IPyHOP(object):
 
     # ******************************        Class Method Declaration        ****************************************** #
     def plan(self, state: State, task_list: _t_type, methods: _m_type = None, actions: _op_type = None,
-             verbose: Optional[int] = 0, initial_max_depth: Union[int,None]=None, depth_step_size: Union[int,None]=None) -> _p_type:
+             verbose: Optional[int] = 0, initial_max_depth: Optional[int]=None,
+             depth_step_size: Optional[int]=None) -> Union[_p_type,bool]:
         """
         IPyHOP.plan(state_1, tasks) tells IPyHOP to find a plan for accomplishing the task_list (a list of tasks)
         *tasks*, starting from an initial state *state_1*, using whatever methods and actions IPyHOP was constructed
@@ -111,9 +112,10 @@ class IPyHOP(object):
 
         _id = 0
         parent_node_id = _id
-        # NOTE should the root have 0 or -1 depth?
         self.sol_tree.add_node(_id, info=('root',), type='D', status='NA', depth=0)
         _id = self._add_nodes_and_edges(_id, self.task_list)
+        # save original task id list for plan failure check
+        original_task_list = [*self.sol_tree.successors(0)]
 
         while True:
             _iter, _ = self._planning(parent_node_id)
@@ -131,10 +133,20 @@ class IPyHOP(object):
                 print( "No solution for max depth of " + str(self.max_depth))
                 print( "Increasing max depth to " + str( self.max_depth + self.depth_step_size ) )
             _id = self._add_nodes_and_edges( 0, self.task_list )
+
+
             self.max_depth += self.depth_step_size
 
         # print(self.sol_tree.nodes[0])
-        return self.sol_plan
+        # check for plan failure
+        new_task_list = [*self.sol_tree.successors(0)]
+        print(self.sol_plan)
+        if new_task_list != original_task_list:
+            if verbose > 0:
+                print("No Plan Possible")
+            return False
+        else:
+            return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
     def _planning(self, sub_graph_root_node_id: int, verbose: Optional[int]=0):
@@ -396,8 +408,32 @@ class IPyHOP(object):
         return curr_node_id, parent_node_id
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def replan(self, state: State, action_position: int, verbose: Optional[int] = 0, depth_step_size: Union[int,None]=None) -> _p_type:
+    def replan(self, state: State, action_position: int, verbose: Optional[int] = 0,
+               depth_step_size: Optional[int]=None) -> Union[Tuple[_p_type,int],bool]:
+        """
+        repairs stored solution tree for a failure occuring at action_position given
+        the state of the world
+        Parameters
+        ----------
+        state           :   State
+                        world state after failure
+        action_position :   int
+                        index immediately after last successful plan action
+        verbose         :   int
+                        higher verbosity increases detail of output in stdout valid for {0,1,2,3}
+        depth_step_size :   Optional[int]
+                        if set will limit how deep the solution tree may expand, otherwise unlimited
+
+        Returns
+        -------
+        Union[_p_type,bool]
+                        if planning succeeds return a tuple with the plan at index 0 and the index where
+                        execution should resume at index 1, if planning fails returns False
+
+        """
         sol_tree = self.sol_tree
+        # get root children for plan success validation
+        original_task_list = [*sol_tree.successors(0)]
         # get node id of action
         dfs_node_ids = [*dfs_preorder_nodes( sol_tree )]
         # print(dfs_node_ids)
@@ -504,9 +540,15 @@ class IPyHOP(object):
             # print( "HERE_2" )
             # plan worked
             break
-
-        self.sol_plan = act_plan
-        return act_plan, exec_plan_index
+        # check for solution failure
+        new_task_list = [*sol_tree.successors(0)]
+        # plan repair failure
+        if new_task_list != original_task_list:
+            return False
+        # plan repair success
+        else:
+            self.sol_plan = act_plan
+            return act_plan, exec_plan_index
         # return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
@@ -713,10 +755,19 @@ class IPyHOP(object):
 
     # ******************************        Class Method Declaration        ****************************************** #
     #
-    def hddl_plan_str( self, name_mapping: Dict[str,str]=None ):
+    def hddl_plan_str( self, name_mapping: Optional[Dict[str,str]]=None ) -> str:
         """
-                returns plan as string in HDDL compliant output (per IPC)
-                node ID is used for action and method ID
+        Get IPC plan solution tree str representation of IPyHOPPER solution tree
+
+        Parameters
+        ----------
+        name_mapping    :   Optional[Dict[str,str]]
+                        dictionary mapping every IPyHOPPER term to desired string representation
+
+        Returns
+        -------
+        str
+                        IPyHOPPER plan in IPC format using str
         """
         sol_tree = self.sol_tree
         # output header
@@ -778,8 +829,21 @@ class IPyHOP(object):
         return output_str
 
 
-    # Given SHOP plan file as file path, duplciate plan
-    def read_SHOP( self, SHOP_sol_tree_path: str, inital_state: State):
+    def read_SHOP( self, SHOP_sol_tree_path: str, initial_state: State ):
+        """
+        Replicate SHOP solution tree in IPyHOPPER
+
+        Parameters
+        ----------
+        SHOP_sol_tree_path      :   str
+                                file path to SHOP tree (IPC format)
+        initial_state           :   State
+                                state at start of the plan
+
+        Returns
+        -------
+
+        """
         re_shop_top_level = self.re_shop_top_level
         re_task= self.re_task
         # make empty solution tree
@@ -873,7 +937,7 @@ class IPyHOP(object):
         sol_plan = [*map( lambda x: sol_tree_nodes[x]["info"], plan_node_ids )]
         self.sol_plan = sol_plan
         # simulate state progression
-        state_list = self.simulate(inital_state,start_ind=0)
+        state_list = self.simulate( initial_state, start_ind=0 )
         # in reverse order assign states to ancestors
         for act_id, act_state in zip(reversed(plan_node_ids), reversed(state_list[:-1])):
             ancestor_id_set = ({*ancestors(sol_tree,act_id)} - {0}) | {act_id}
