@@ -49,6 +49,8 @@ class IPyHOP(object):
         self.depth_step_size=None
         self.max_depth = None
         self._verbose = 0
+        # when True will perform branch cycle checking, when False will not
+        self.branch_cycle_check_flag = True
 
     _t_type = List[Tuple[str]]
     _m_type = Optional[Methods]
@@ -732,15 +734,17 @@ class IPyHOP(object):
     # returns true if the new state for the node at node_id is equal to any state on the path from that node
     # to the root, else returns false
     def branch_cyclic( self, new_state: State, node_id: int ) -> bool:
-        # return False
-        sol_tree = self.sol_tree
-        sol_tree_nodes = sol_tree.nodes
-        node_ancestors = ancestors( sol_tree, node_id )
-        # do want to look at root which is stateless
-        node_ancestors.remove(0)
-        ancestor_states = map( lambda x: sol_tree_nodes[x]["state"], node_ancestors )
+        if self.branch_cycle_check_flag:
+            sol_tree = self.sol_tree
+            sol_tree_nodes = sol_tree.nodes
+            node_ancestors = ancestors( sol_tree, node_id )
+            # do want to look at root which is stateless
+            node_ancestors.remove(0)
+            ancestor_states = map( lambda x: sol_tree_nodes[x]["state"], node_ancestors )
 
-        return any( new_state == a_node_state for a_node_state in ancestor_states )
+            return any( new_state == a_node_state for a_node_state in ancestor_states )
+        else:
+            return False
 
     # # ******************************        Class Method Declaration        ****************************************** #
     # def is_dependency_of(self, node_1_id: int, node_2_id: int) -> bool:
