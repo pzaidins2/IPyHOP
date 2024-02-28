@@ -759,7 +759,9 @@ class IPyHOP(object):
 
     # ******************************        Class Method Declaration        ****************************************** #
     #
-    def hddl_plan_str( self, name_mapping: Optional[Dict[str,str]]=None ) -> str:
+    def hddl_plan_str( self,
+                       name_mapping: Optional[Dict[str,str]]=None,
+                       deviation_after_action: Optional[int] = None) -> str:
         """
         Get IPC plan solution tree str representation of IPyHOPPER solution tree
 
@@ -767,6 +769,9 @@ class IPyHOP(object):
         ----------
         name_mapping    :   Optional[Dict[str,str]]
                         dictionary mapping every IPyHOPPER term to desired string representation
+        deviation_after_action : Optional[int]
+            If there is a deviation, what action does it come *after*?  This is based on counting
+            the actions starting from **1**.  There should never be a deviation before any action.
 
         Returns
         -------
@@ -781,16 +786,20 @@ class IPyHOP(object):
         dfs_action_node_ids = [ *filter( lambda x: sol_tree.nodes[ x ][ "type" ] == "A", preorder_node_ids ) ]
         dfs_action_nodes = [*map( lambda x: (x, sol_tree.nodes[ x ]), dfs_action_node_ids )]
         # unpack each action into string
+        i: int = 1
         for node_id, node in dfs_action_nodes:
             # id
             output_str += str(node_id) + " "
-            # action name and arguements
+            # action name and arguments
             for arg in node[ "info" ]:
                 arg_str = str( arg )
                 if name_mapping is not None:
                     arg_str = name_mapping[ arg_str ]
                 output_str += arg_str + " "
             output_str += "\n"
+            if deviation_after_action is not None and deviation_after_action == i:
+                output_str += "-1 DEVIATION\n"
+            i += 1
         # decomposition
         output_str += "\n"
         dfs_nonaction_node_ids = [ *filter( lambda x: sol_tree.nodes[ x ][ "type" ] != "A", preorder_node_ids ) ]
