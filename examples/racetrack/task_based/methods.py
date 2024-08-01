@@ -412,7 +412,7 @@ methods.declare_task_methods( "stop_at", [ stop_at_1, stop_at_2, stop_at_3, stop
 #             sub_dest = ( loc[ 0 ] + d_wall[ 0 ], loc[ 1 ] + d_wall[ 1 ] )
 #             plan = tm_move_direct_to( state, sub_dest )
 #             # move in direction of wall one step if possible
-#             if plan != None:
+#             if plan is not None:
 #                 return [ plan[ 0 ], ( "move_close", dest ) ]
 #
 # # an obstacle exists between racecar and destination
@@ -433,7 +433,7 @@ methods.declare_task_methods( "stop_at", [ stop_at_1, stop_at_2, stop_at_3, stop
 #             sub_dest = ( loc[ 0 ] - d_wall[ 0 ], loc[ 1 ] - d_wall[ 1 ] )
 #             plan = tm_move_direct_to( state, sub_dest )
 #             # move in direction of wall one step if possible
-#             if plan != None:
+#             if plan is not None:
 #                 return [ plan[ 0 ], ( "move_close", dest ) ]
 #
 # methods.declare_task_methods( 'move_close', [ tm_move_direct_to, tm_follow_wall_parallel, tm_follow_wall_antiparallel ] )
@@ -445,7 +445,7 @@ methods.declare_task_methods( "stop_at", [ stop_at_1, stop_at_2, stop_at_3, stop
 #     loc = state.loc
 #     plan = tm_move_direct_to( state, dest )
 #     # guide car towards destination, if obstruction occurs then use long distance protocal again
-#     if plan != None:
+#     if plan is not None:
 #         _, dv_x, dv_y = plan[ 0 ]
 #         new_v = ( v[ 0 ] + dv_x, v[ 1 ] + dv_y )
 #         new_loc = ( loc[ 0 ] + new_v[ 0 ], loc[ 1 ] + new_v[ 1 ] )

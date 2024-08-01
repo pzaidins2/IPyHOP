@@ -241,7 +241,7 @@ def make_horizontal_walls(xmax,ymax,y,M):
     startx = None
     walls = []
     for x in range(xmax):
-        if startx == None:
+        if startx is None:
             if M[x,y]:            # start a wall at x
                 startx = x
         else:                     # wall in progress
@@ -260,7 +260,7 @@ def make_vertical_walls(xmax,ymax,x,M):
     starty = None
     walls = []
     for y in range(ymax):
-        if starty == None:
+        if starty is None:
             if M[x,y]:           # start a wall at y
                 starty = y
         else:                    # wall in progress

@@ -155,7 +155,7 @@ class IPyHOP_Old(object):
                     # If methods are available for refining the task, use them.
                     while curr_node[ 'available_methods' ] != [ ]:
                         # get method instance
-                        if curr_node[ 'selected_method_instances' ] == None:
+                        if curr_node[ 'selected_method_instances' ] is None:
                             method = curr_node[ 'available_methods' ][ 0 ]
                             curr_node[ 'selected_method' ] = method
                             # create method instance generator
@@ -221,7 +221,7 @@ class IPyHOP_Old(object):
                         # If methods are available for refining the goal, use them.
                         while curr_node[ 'available_methods' ] != [ ]:
                             # get method instance
-                            if curr_node[ 'selected_method_instances' ] == None:
+                            if curr_node[ 'selected_method_instances' ] is None:
                                 method = curr_node[ 'available_methods' ][ 0 ]
                                 curr_node[ 'selected_method' ] = method
                                 # create method instance generator
@@ -269,7 +269,7 @@ class IPyHOP_Old(object):
                         # If methods are available for refining the multigoal, use them.
                         while curr_node[ 'available_methods' ] != [ ]:
                             # get method instance
-                            if curr_node[ 'selected_method_instances' ] == None:
+                            if curr_node[ 'selected_method_instances' ] is None:
                                 # get next method
                                 method = curr_node[ 'available_methods' ][ 0 ]
                                 # print( method )

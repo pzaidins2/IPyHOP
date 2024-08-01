@@ -114,7 +114,7 @@ def gm_navigate_1( state, r, to, rigid ):
     f = at[ r ]
     if f != to:
         p = path( can_traverse, r, f, to )
-        if p != None:
+        if p is not None:
             yield [ ( "t_move", r, p ) ]
 
 methods.declare_goal_methods( "at", [ gm_navigate_0, gm_navigate_1 ] )

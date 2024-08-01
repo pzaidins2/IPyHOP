@@ -59,10 +59,10 @@ class IPyHOP(object):
     # group 0: node id
     # group 1: task/action string
     # group 2: child node ids
-    re_shop_top_level = re.compile( "^([0-9]+?)\s\((.+?)\)(\s->\s)?(.*?)$",
+    re_shop_top_level = re.compile( r"^([0-9]+?)\s\((.+?)\)(\s->\s)?(.*?)$",
                                     flags=re.MULTILINE | re.DOTALL )
     # group 5
-    re_task = re.compile( "(.+?)(?=\s|$)",
+    re_task = re.compile( r"(.+?)(?=\s|$)",
                           flags=re.MULTILINE | re.DOTALL )
 
 
@@ -129,7 +129,7 @@ class IPyHOP(object):
                 if self.sol_tree.nodes[node_id]['type'] == 'A':
                     self.sol_plan.append( self.sol_tree.nodes[node_id]['info'] )
             # if only root remains we need to increase max depth and try again
-            if len(self.sol_tree.nodes) > 1 or depth_step_size == None:
+            if len(self.sol_tree.nodes) > 1 or depth_step_size is None:
                 break
             elif verbose>0:
                 print( "No solution for max depth of " + str(self.max_depth))
@@ -165,7 +165,7 @@ class IPyHOP(object):
             for node_id in self.sol_tree.successors( parent_node_id ):
                 if self.sol_tree.nodes[node_id]['status'] == 'O':
                     curr_node_id = node_id
-                    if marked_node_id == None:
+                    if marked_node_id is None:
                         marked_node_id = curr_node_id
                     if self._verbose > 1:
                         print('Iteration {}, Refining node {}.'.format(
@@ -219,11 +219,11 @@ class IPyHOP(object):
             subtasks = None
             # consider failure if next decomposition would exceed max depth
             # print(curr_node["depth"], self.max_depth)
-            if self.max_depth == None or curr_node["depth"] < self.max_depth:
+            if self.max_depth is None or curr_node["depth"] < self.max_depth:
                 # If methods are available for refining the task, use them.
                 while curr_node[ 'available_methods' ] != [ ]:
                     # get method instance
-                    if curr_node[ 'selected_method_instances' ] == None:
+                    if curr_node[ 'selected_method_instances' ] is None:
                         method = curr_node[ 'available_methods' ][ 0 ]
                         curr_node[ 'selected_method' ] = method
                         # create method instance generator
@@ -290,11 +290,11 @@ class IPyHOP(object):
                     print('Iteration {}, Goal {} already achieved'.format(_iter, repr(curr_node_info)))
             else:
                 # consider failure if next decomposition would exceed max depth
-                if self.max_depth == None or curr_node[ "depth" ] < self.max_depth:
+                if self.max_depth is None or curr_node[ "depth" ] < self.max_depth:
                     # If methods are available for refining the goal, use them.
                     while curr_node[ 'available_methods' ] != [ ]:
                         # get method instance
-                        if curr_node[ 'selected_method_instances' ] == None:
+                        if curr_node[ 'selected_method_instances' ] is None:
                             method = curr_node[ 'available_methods' ][ 0 ]
                             curr_node[ 'selected_method' ] = method
                             # create method instance generator
@@ -339,11 +339,11 @@ class IPyHOP(object):
                     print('Iteration {}, MultiGoal {} already achieved'.format(_iter, repr(curr_node_info)))
             else:
                 # consider failure if next decomposition would exceed max depth
-                if self.max_depth == None or curr_node[ "depth" ] < self.max_depth:
+                if self.max_depth is None or curr_node[ "depth" ] < self.max_depth:
                     # If methods are available for refining the multigoal, use them.
                     while curr_node[ 'available_methods' ] != [ ]:
                         # get method instance
-                        if curr_node[ 'selected_method_instances' ] == None:
+                        if curr_node[ 'selected_method_instances' ] is None:
                             # get next method
                             method = curr_node[ 'available_methods' ][ 0 ]
                             # print( method )

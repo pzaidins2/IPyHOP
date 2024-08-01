@@ -24,7 +24,7 @@ def init_openstacks( pddl_str, actions, methods ):
     # create multigoal
     goal_a = MultiGoal("goal_a")
     # define object types
-    object_re = re.compile("(\w.+\w)\W*- (\w+)")
+    object_re = re.compile(r"(\w.+\w)\W*- (\w+)")
     rigid = dict()
     rigid[ "type_dict" ] = dict()
     type_dict = rigid[ "type_dict" ]
@@ -35,7 +35,7 @@ def init_openstacks( pddl_str, actions, methods ):
         if obj_type == "count":
             rigid[ "max_stacks" ] = len( type_dict[ obj_type ] ) - 1
     # uniary relations
-    unary_re = re.compile( "(waiting|shipped) (\w+)" )
+    unary_re = re.compile( r"(waiting|shipped) (\w+)" )
     state_0.waiting = dict()
     goal_a.shipped = dict()
     unary_re_matches = unary_re.findall( pddl_str )
@@ -45,7 +45,7 @@ def init_openstacks( pddl_str, actions, methods ):
         elif var in{ "shipped" }:
             getattr( goal_a, var )[ val ] = True
     # binary relations
-    binary_re = re.compile( "(includes) (\w+) (\w+)" )
+    binary_re = re.compile( r"(includes) (\w+) (\w+)" )
     binary_re_matches = binary_re.findall( pddl_str )
     rigid[ "includes"] = { x: set() for x in type_dict[ "order" ] }
     rigid[ "included_in" ] = { x: set() for x in type_dict[ "product" ] }
@@ -94,12 +94,13 @@ def main():
             problem_file.close()
 
             planner = IPyHOP( methods, actions )
+            planner.branch_cycle_check_flag = False
             state_0, goal_a, rigid = init_openstacks( problem_str, actions, methods )
             mc_executor = MonteCarloExecutor( actions, deviation_handler( actions, planner, rigid ) )
             actor = Actor( planner, mc_executor )
             history = actor.complete_to_do( state_0, [ goal_a ],verbose=3 )
-            if history is None:
-                raise
+            if history is False:
+                raise(ValueError("history should never be False for example"))
             # print( history )
 
 

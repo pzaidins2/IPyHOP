@@ -17,7 +17,7 @@ class MonteCarloExecutor(object):
         self.actions = actions
         self.deviation_handler = deviation_handler
         self.exec_list = None
-        if seed != None:
+        if seed is not None:
             np.random.seed(seed)
 
     # ******************************        Class Method Declaration        ****************************************** #
@@ -37,7 +37,7 @@ class MonteCarloExecutor(object):
             if result == 0:
                 result_state = act_func(state_copy, *act_params)
             else:
-                if deviation_handler != None:
+                if deviation_handler is not None:
                     deviation_state = deviation_handler( i, plan, state_copy )
                     # print(self.exec_list)
                     self.exec_list[ -1 ] = (self.exec_list[ -1 ][ 0 ], deviation_state)

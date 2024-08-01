@@ -93,6 +93,7 @@ def tm_plan_for_goals_1( state, multigoal, rigid ):
 
 methods.declare_task_methods( "t_plan_for_goals", [ tm_plan_for_goals_0, tm_plan_for_goals_1 ] )
 
+
 def tm_one_step_0( state, rigid ):
     shipped = state.shipped
     includes = rigid[ "includes" ]
@@ -219,7 +220,7 @@ methods.declare_task_methods( "t_start_an_order_for", [ tm_start_an_order_for ] 
 #         yield [ ( "verify_orders", multigoal ) ]
 #
 # methods.declare_task_methods( "t_verify_orders", [ tm_verify_orders ] )
-
+#
 # def ship_products( state, o, val, rigid ):
 #     stacks_open = state.stacks_open
 #     if stacks_open > 0:

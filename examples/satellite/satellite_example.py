@@ -135,8 +135,8 @@ def main():
             mc_executor = MonteCarloExecutor( actions, deviation_handler( actions, planner, rigid ) )
             actor = Actor( planner, mc_executor )
             history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
-            if len( history ) == 0:
-                raise ("FAILED PLANNING")
+            if history is False:
+                raise ValueError("FAILED PLANNING")
 
 
 

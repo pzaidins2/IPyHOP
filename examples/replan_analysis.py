@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # read in data
 
 
-    coord_re = re.compile( "([a-z]+)_([a-z]+)_([\w]+)\.csv" )
+    coord_re = re.compile( r"([a-z]+)_([a-z]+)_([\w]+)\.csv" )
 
     for i in range( len( domains ) ):
         domain = domains[ i ]

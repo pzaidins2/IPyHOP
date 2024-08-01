@@ -25,7 +25,7 @@ def init_rovers( pddl_str, actions, methods ):
     # create multigoal
     goal_a = MultiGoal("goal_a")
     # define object types
-    object_re = re.compile("(\w.+\w)\W*- (\w+)")
+    object_re = re.compile(r"(\w.+\w)\W*- (\w+)")
     rigid = dict()
     rigid[ "type_dict" ] = dict()
     type_dict = rigid[ "type_dict" ]
@@ -73,7 +73,7 @@ def init_rovers( pddl_str, actions, methods ):
     state_0.visible_from = { o: set() for o in type_dict[ "objective" ] }
     state_0.communicated_image_data = dict()
     goal_a.communicated_image_data = dict()
-    binary_re = re.compile( "(visible|at_lander|at|store_of|on_board|calibration_target|supports|visible_from|" +
+    binary_re = re.compile( r"(visible|at_lander|at|store_of|on_board|calibration_target|supports|visible_from|" +
                             "communicated_image_data) (\w+) (\w+)" )
     binary_re_matches = binary_re.findall( pddl_str )
     for var, val_0, val_1 in binary_re_matches:
@@ -94,7 +94,7 @@ def init_rovers( pddl_str, actions, methods ):
             getattr( state_0, var )[ (val_0, val_1) ] = False
     # trinary relations
     rigid[ "can_traverse" ] = { r: set() for r in type_dict[ "rover" ] }
-    trinary_re = re.compile( "(can_traverse) (\w+) (\w+) (\w+)" )
+    trinary_re = re.compile( r"(can_traverse) (\w+) (\w+) (\w+)" )
     trinary_re_matches = trinary_re.findall( pddl_str )
     for var, val_0, val_1, val_2 in trinary_re_matches:
         if var in { "can_traverse" }:
@@ -139,7 +139,7 @@ def main():
             actor = Actor( planner, mc_executor )
             history = actor.complete_to_do( state_0, [ goal_a ], verbose=3 )
             if history is False:
-                raise( "FAILED PLANNING")
+                raise ValueError("FAILED PLANNING")
 
 # ******************************************        Main Program End        ****************************************** #
 # ******************************************    Demo / Test Routine         ****************************************** #

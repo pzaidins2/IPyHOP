@@ -56,7 +56,7 @@ class shopfixer_deviation_handler():
             return state
         else:
             # trigger deviation with probability modified by possible deviation
-            # we want all deviations over the course of the plan to trigeer with equal likelihood
+            # we want all deviations over the course of the plan to trigger with equal likelihood
             have_deviation = random.uniform(0,1)
             if have_deviation < self.base_probability * self.deviation_state_count / self.deviation_max:
                 return self.chosen_deviation
