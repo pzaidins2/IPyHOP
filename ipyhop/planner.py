@@ -120,7 +120,7 @@ class IPyHOP(object):
         original_task_list = [*self.sol_tree.successors(0)]
 
         while True:
-            _iter, _ = self._planning(parent_node_id)
+            _iter, _ = self._planning(parent_node_id, verbose=verbose)
             self.iterations += _iter
             assert is_tree(self.sol_tree), "Error! Solution graph is not a tree."
 
