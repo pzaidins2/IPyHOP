@@ -29,7 +29,7 @@ class IPyHOP(object):
         To plan using the planner, you should use planner.plan(state, task_list).
     """
 
-    def __init__(self, methods: Methods, actions: Actions ):
+    def __init__(self, methods: Methods, actions: Actions, verbose: Optional[int]=0 ):
         """
         IPyHOP Constructor.
 
@@ -48,7 +48,7 @@ class IPyHOP(object):
         self.node_expansions = 0
         self.depth_step_size=None
         self.max_depth = None
-        self._verbose = 0
+        self._verbose = verbose
         # when True will perform branch cycle checking, when False will not
         self.branch_cycle_check_flag = True
 
@@ -69,7 +69,7 @@ class IPyHOP(object):
 
     # ******************************        Class Method Declaration        ****************************************** #
     def plan(self, state: State, task_list: _t_type, methods: _m_type = None, actions: _op_type = None,
-             verbose: Optional[int] = 0, initial_max_depth: Optional[int]=None,
+             verbose: Optional[int] = None, initial_max_depth: Optional[int]=None,
              depth_step_size: Optional[int]=None) -> Union[_p_type,bool]:
         """
         IPyHOP.plan(state_1, tasks) tells IPyHOP to find a plan for accomplishing the task_list (a list of tasks)
@@ -100,14 +100,15 @@ class IPyHOP(object):
         self.task_list = deepcopy(task_list)
         self.methods = self.methods if methods is None else methods
         self.actions = self.actions if actions is None else actions
-        self._verbose = verbose
+        if verbose is None:
+            verbose = self._verbose
         self.depth_step_size=depth_step_size
         self.max_depth=initial_max_depth if initial_max_depth is not None else depth_step_size
         self.iterations = 0
 
-        if self._verbose > 0:
+        if verbose > 0:
             run_info = '**IPyHOP, verbose = {verbosity}: **\n\tstate = {state}\n\ttasks/goals = {task_list}.'
-            print(run_info.format(verbosity=self._verbose, state=self.state.__name__, task_list=task_list))
+            print(run_info.format(verbosity=verbose, state=self.state.__name__, task_list=task_list))
 
         self.sol_plan = []
         self.sol_tree = DiGraph()
@@ -151,7 +152,10 @@ class IPyHOP(object):
             return self.sol_plan
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def _planning(self, sub_graph_root_node_id: int, verbose: Optional[int]=0):
+    def _planning(self, sub_graph_root_node_id: int, verbose: Optional[int]=None):
+
+        if verbose is None:
+            verbose = self._verbose
 
         _iter = 0
         parent_node_id = sub_graph_root_node_id
@@ -167,7 +171,7 @@ class IPyHOP(object):
                     curr_node_id = node_id
                     if marked_node_id is None:
                         marked_node_id = curr_node_id
-                    if self._verbose > 1:
+                    if verbose > 1:
                         print('Iteration {}, Refining node {}.'.format(
                             _iter, repr(self.sol_tree.nodes[node_id]['info'])))
                         # print( str( [ self.sol_tree.nodes[node_id]['info'] for node_id in dfs_preorder_nodes(self.sol_tree) if self.sol_tree.nodes[node_id]["type"] == "A"] ) )
@@ -182,24 +186,26 @@ class IPyHOP(object):
                 try:
                     parent_node_id = next( self.sol_tree.predecessors( parent_node_id ) )
                 except StopIteration:  # if the parent_node_id has no predecessors (i.e. it is root) end refinement.
-                    if self._verbose > 2:
+                    if verbose > 2:
                         print('Iteration {}, Planning Complete.'.format(_iter))
                     break
-                if self._verbose > 2:
+                if verbose > 2:
                     print('Iteration {}, Parent node modified to {}.'.format(
                         _iter, repr(self.sol_tree.nodes[parent_node_id]['info'])))
                     print('Iteration {}, Child nodes are now: {}.'.format(
                         _iter, repr([self.sol_tree.nodes[x]['info'] for x in self.sol_tree.successors(parent_node_id)])))
             # Else, it means that an Open node was found in the subgraph. Refine the node.
             else:
-                curr_node_id, parent_node_id = self._node_refine( curr_node_id, parent_node_id, _iter )
+                curr_node_id, parent_node_id = self._node_refine( curr_node_id, parent_node_id, _iter, verbose )
             # if parent_node_id in ancestors( self.sol_tree, sub_graph_root_node_id ):
             #     break
         # return iteration count and reachable most bottom-left node in subtree
         return _iter, next( dfs_preorder_nodes( self.sol_tree, marked_node_id ) )
 
     # ******************************        Class Method Declaration        ****************************************** #
-    def _node_refine(self, curr_node_id: int, parent_node_id: int, _iter: int ):
+    def _node_refine(self, curr_node_id: int, parent_node_id: int, _iter: int, verbose: Optional[int]=None ):
+        if verbose is None:
+            verbose = self._verbose
         self.node_expansions += 1
         curr_node = self.sol_tree.nodes[curr_node_id]
         if 'state' in curr_node:
@@ -243,7 +249,7 @@ class IPyHOP(object):
                         curr_node[ 'status' ] = 'C'
                         _id = self._add_nodes_and_edges( curr_node_id, subtasks )
                         parent_node_id = curr_node_id
-                        if self._verbose > 2:
+                        if verbose > 2:
                             print( 'Iteration {}, Task {} successfully refined'.format( _iter,
                                                                                         repr( curr_node_info ) ) )
                             print( 'Iteration {}, Parent node modified to {}.'.format(
@@ -251,7 +257,7 @@ class IPyHOP(object):
                         break
             if subtasks is None:
                 parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                if self._verbose > 2:
+                if verbose > 2:
                     print('Iteration {}, Task {} refinement failed'.format(_iter, repr(curr_node_info)))
                     print('Iteration {}, Backtracking to {}.'.format(
                         _iter, repr(self.sol_tree.nodes[curr_node_id]['info'])))
@@ -268,12 +274,12 @@ class IPyHOP(object):
                 if new_state is not None:
                     curr_node['status'] = 'C'
                     self.state.update(new_state)
-                    if self._verbose > 2:
+                    if verbose > 2:
                         print('Iteration {}, Action {} successful.'.format(_iter, repr(curr_node_info)))
             if new_state is None:
 
                 parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                if self._verbose > 2:
+                if verbose > 2:
                     print('Iteration {}, Action {} failed.'.format(_iter, repr(curr_node_info)))
                     print('Iteration {}, Backtracking to {}.'.format(
                         _iter, repr(self.sol_tree.nodes[curr_node_id]['info'])))
@@ -286,7 +292,7 @@ class IPyHOP(object):
             if self.state.__dict__[state_var][arg] == desired_val:
                 curr_node['status'] = 'C'
                 subgoals = []
-                if self._verbose > 2:
+                if verbose > 2:
                     print('Iteration {}, Goal {} already achieved'.format(_iter, repr(curr_node_info)))
             else:
                 # consider failure if next decomposition would exceed max depth
@@ -315,7 +321,7 @@ class IPyHOP(object):
                             curr_node[ 'status' ] = 'C'
                             _id = self._add_nodes_and_edges( curr_node_id, subgoals )
                             parent_node_id = curr_node_id
-                            if self._verbose > 2:
+                            if verbose > 2:
                                 print( 'Iteration {}, Goal {} successfully refined'.format( _iter,
                                                                                                  repr( curr_node_info ) ) )
                                 print( 'Iteration {}, Parent node modified to {}.'.format(
@@ -323,7 +329,7 @@ class IPyHOP(object):
                             break
             if subgoals is None:
                 parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                if self._verbose > 2:
+                if verbose > 2:
                     print('Iteration {}, Goal {} refinement failed'.format(_iter, repr(curr_node_info)))
                     print('Iteration {}, Backtracking to {}.'.format(
                         _iter, repr(self.sol_tree.nodes[curr_node_id]['info'])))
@@ -335,7 +341,7 @@ class IPyHOP(object):
             if not unachieved_goals:
                 curr_node['status'] = "C"
                 subgoals = []
-                if self._verbose > 2:
+                if verbose > 2:
                     print('Iteration {}, MultiGoal {} already achieved'.format(_iter, repr(curr_node_info)))
             else:
                 # consider failure if next decomposition would exceed max depth
@@ -371,7 +377,7 @@ class IPyHOP(object):
                             curr_node[ 'status' ] = 'C'
                             _id = self._add_nodes_and_edges( curr_node_id, subgoals )
                             parent_node_id = curr_node_id
-                            if self._verbose > 2:
+                            if verbose > 2:
                                 print( 'Iteration {}, MultiGoal {} successfully refined'.format( _iter,
                                                                                             repr( curr_node_info ) ) )
                                 print( 'Iteration {}, Parent node modified to {}.'.format(
@@ -379,7 +385,7 @@ class IPyHOP(object):
                             break
             if subgoals is None:
                 parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                if self._verbose > 2:
+                if verbose > 2:
                     print(
                         'Iteration {}, MultiGoal {} refinement failed'.format(_iter, repr(curr_node_info)))
                     print('Iteration {}, Backtracking to {}.'.format(
@@ -391,7 +397,7 @@ class IPyHOP(object):
                 curr_node['status'] = "C"
             else:
                 parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                if self._verbose > 2:
+                if verbose > 2:
                     curr_node_info = self.sol_tree.nodes[curr_node_id]['info']
                     print('Iteration {}, Goal {} Verification failed.'.format(_iter, repr(curr_node_info)))
                     print('Iteration {}, Backtracking to {}.'.format(_iter, repr(curr_node_info)))
@@ -402,7 +408,7 @@ class IPyHOP(object):
                 curr_node['status'] = "C"
             else:
                 parent_node_id, curr_node_id = self._backtrack(parent_node_id, curr_node_id)
-                if self._verbose > 2:
+                if verbose > 2:
                     curr_node_info = self.sol_tree.nodes[curr_node_id]['info']
                     print('Iteration {}, MultiGoal {} Verification failed.'.format(_iter,
                                                                                    repr(curr_node_info)))
